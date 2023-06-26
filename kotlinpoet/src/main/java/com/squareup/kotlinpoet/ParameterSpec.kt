@@ -28,11 +28,11 @@ import kotlin.reflect.KClass
 /** A generated parameter declaration. */
 public class ParameterSpec private constructor(
   builder: Builder,
-  private val tagMap: TagMap = builder.buildTagMap()
-) : Taggable by tagMap {
+  private val tagMap: TagMap = builder.buildTagMap(),
+) : Taggable by tagMap, Annotatable, Documentable {
   public val name: String = builder.name
-  public val kdoc: CodeBlock = builder.kdoc.build()
-  public val annotations: List<AnnotationSpec> = builder.annotations.toImmutableList()
+  override val kdoc: CodeBlock = builder.kdoc.build()
+  override val annotations: List<AnnotationSpec> = builder.annotations.toImmutableList()
   public val modifiers: Set<KModifier> = builder.modifiers
     .also {
       LinkedHashSet(it).apply {
@@ -55,7 +55,7 @@ public class ParameterSpec private constructor(
     codeWriter: CodeWriter,
     includeType: Boolean = true,
     emitKdoc: Boolean = false,
-    inlineAnnotations: Boolean = true
+    inlineAnnotations: Boolean = true,
   ) {
     if (emitKdoc) codeWriter.emitKdoc(kdoc.ensureEndsWithNewLine())
     codeWriter.emitAnnotations(annotations, inlineAnnotations)
@@ -95,40 +95,14 @@ public class ParameterSpec private constructor(
 
   public class Builder internal constructor(
     internal val name: String,
-    internal val type: TypeName
-  ) : Taggable.Builder<Builder> {
+    internal val type: TypeName,
+  ) : Taggable.Builder<Builder>, Annotatable.Builder<Builder>, Documentable.Builder<Builder> {
     internal var defaultValue: CodeBlock? = null
 
-    public val kdoc: CodeBlock.Builder = CodeBlock.builder()
-    public val annotations: MutableList<AnnotationSpec> = mutableListOf()
     public val modifiers: MutableList<KModifier> = mutableListOf()
+    override val kdoc: CodeBlock.Builder = CodeBlock.builder()
     override val tags: MutableMap<KClass<*>, Any> = mutableMapOf()
-
-    public fun addKdoc(format: String, vararg args: Any): Builder = apply {
-      kdoc.add(format, *args)
-    }
-
-    public fun addKdoc(block: CodeBlock): Builder = apply {
-      kdoc.add(block)
-    }
-
-    public fun addAnnotations(annotationSpecs: Iterable<AnnotationSpec>): Builder = apply {
-      annotations += annotationSpecs
-    }
-
-    public fun addAnnotation(annotationSpec: AnnotationSpec): Builder = apply {
-      annotations += annotationSpec
-    }
-
-    public fun addAnnotation(annotation: ClassName): Builder = apply {
-      annotations += AnnotationSpec.builder(annotation).build()
-    }
-
-    public fun addAnnotation(annotation: Class<*>): Builder =
-      addAnnotation(annotation.asClassName())
-
-    public fun addAnnotation(annotation: KClass<*>): Builder =
-      addAnnotation(annotation.asClassName())
+    override val annotations: MutableList<AnnotationSpec> = mutableListOf()
 
     public fun addModifiers(vararg modifiers: KModifier): Builder = apply {
       this.modifiers += modifiers
@@ -141,7 +115,7 @@ public class ParameterSpec private constructor(
     @Deprecated(
       "There are no jvm modifiers applicable to parameters in Kotlin",
       ReplaceWith(""),
-      level = ERROR
+      level = ERROR,
     )
     public fun jvmModifiers(modifiers: Iterable<Modifier>): Builder = apply {
       throw IllegalArgumentException("JVM modifiers are not permitted on parameters in Kotlin")
@@ -154,13 +128,40 @@ public class ParameterSpec private constructor(
       this.defaultValue = codeBlock
     }
 
+    //region Overrides for binary compatibility
+    @Suppress("RedundantOverride")
+    override fun addAnnotation(annotationSpec: AnnotationSpec): Builder = super.addAnnotation(annotationSpec)
+
+    @Suppress("RedundantOverride")
+    override fun addAnnotations(annotationSpecs: Iterable<AnnotationSpec>): Builder =
+      super.addAnnotations(annotationSpecs)
+
+    @Suppress("RedundantOverride")
+    override fun addAnnotation(annotation: ClassName): Builder = super.addAnnotation(annotation)
+
+    @DelicateKotlinPoetApi(
+      message = "Java reflection APIs don't give complete information on Kotlin types. Consider " +
+        "using the kotlinpoet-metadata APIs instead.",
+    )
+    override fun addAnnotation(annotation: Class<*>): Builder = super.addAnnotation(annotation)
+
+    @Suppress("RedundantOverride")
+    override fun addAnnotation(annotation: KClass<*>): Builder = super.addAnnotation(annotation)
+
+    @Suppress("RedundantOverride")
+    override fun addKdoc(format: String, vararg args: Any): Builder = super.addKdoc(format, *args)
+
+    @Suppress("RedundantOverride")
+    override fun addKdoc(block: CodeBlock): Builder = super.addKdoc(block)
+    //endregion
+
     public fun build(): ParameterSpec = ParameterSpec(this)
   }
 
   public companion object {
     @DelicateKotlinPoetApi(
       message = "Element APIs don't give complete information on Kotlin types. Consider using" +
-        " the kotlinpoet-metadata APIs instead."
+        " the kotlinpoet-metadata APIs instead.",
     )
     @JvmStatic
     public fun get(element: VariableElement): ParameterSpec {
@@ -172,7 +173,7 @@ public class ParameterSpec private constructor(
 
     @DelicateKotlinPoetApi(
       message = "Element APIs don't give complete information on Kotlin types. Consider using" +
-        " the kotlinpoet-metadata APIs instead."
+        " the kotlinpoet-metadata APIs instead.",
     )
     @JvmStatic
     public fun parametersOf(method: ExecutableElement): List<ParameterSpec> =
@@ -181,7 +182,7 @@ public class ParameterSpec private constructor(
     @JvmStatic public fun builder(
       name: String,
       type: TypeName,
-      vararg modifiers: KModifier
+      vararg modifiers: KModifier,
     ): Builder {
       return Builder(name, type).addModifiers(*modifiers)
     }
@@ -192,13 +193,13 @@ public class ParameterSpec private constructor(
     @JvmStatic public fun builder(
       name: String,
       type: KClass<*>,
-      vararg modifiers: KModifier
+      vararg modifiers: KModifier,
     ): Builder = builder(name, type.asTypeName(), *modifiers)
 
     @JvmStatic public fun builder(
       name: String,
       type: TypeName,
-      modifiers: Iterable<KModifier>
+      modifiers: Iterable<KModifier>,
     ): Builder {
       return Builder(name, type).addModifiers(modifiers)
     }
@@ -206,13 +207,13 @@ public class ParameterSpec private constructor(
     @JvmStatic public fun builder(
       name: String,
       type: Type,
-      modifiers: Iterable<KModifier>
+      modifiers: Iterable<KModifier>,
     ): Builder = builder(name, type.asTypeName(), modifiers)
 
     @JvmStatic public fun builder(
       name: String,
       type: KClass<*>,
-      modifiers: Iterable<KModifier>
+      modifiers: Iterable<KModifier>,
     ): Builder = builder(name, type.asTypeName(), modifiers)
 
     @JvmStatic public fun unnamed(type: KClass<*>): ParameterSpec = unnamed(type.asTypeName())
@@ -229,7 +230,7 @@ private val ALLOWED_PARAMETER_MODIFIERS = setOf(VARARG, NOINLINE, CROSSINLINE)
 internal fun List<ParameterSpec>.emit(
   codeWriter: CodeWriter,
   forceNewLines: Boolean = false,
-  emitBlock: (ParameterSpec) -> Unit = { it.emit(codeWriter) }
+  emitBlock: (ParameterSpec) -> Unit = { it.emit(codeWriter) },
 ) = with(codeWriter) {
   emit("(")
 

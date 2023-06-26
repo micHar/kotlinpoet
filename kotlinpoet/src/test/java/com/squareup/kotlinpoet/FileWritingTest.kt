@@ -18,17 +18,18 @@ package com.squareup.kotlinpoet
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import com.google.common.truth.Truth.assertThat
-import org.junit.Rule
-import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.Files
 import java.util.Date
 import kotlin.test.Test
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
 
 class FileWritingTest {
   // Used for testing java.io File behavior.
-  @JvmField @Rule val tmp = TemporaryFolder()
+  @JvmField @Rule
+  val tmp = TemporaryFolder()
 
   // Used for testing java.nio.file Path behavior.
   private val fs = Jimfs.newFileSystem(Configuration.unix())
@@ -136,7 +137,8 @@ class FileWritingTest {
   }
 
   @Suppress("LocalVariableName")
-  @Test fun filerPassesOriginatingElements() {
+  @Test
+  fun filerPassesOriginatingElements() {
     // TypeSpecs
     val element1_1 = FakeElement()
     val test1 = TypeSpec.classBuilder("Test1")
@@ -203,7 +205,7 @@ class FileWritingTest {
       element3_1,
       element3_2,
       element4_1,
-      element4_2
+      element4_2,
     )
   }
 
@@ -237,7 +239,7 @@ class FileWritingTest {
           .addModifiers(KModifier.PUBLIC)
           .addParameter("args", Array<String>::class.java)
           .addCode("%T.out.println(%S);\n", System::class, "Hello World!")
-          .build()
+          .build(),
       )
       .build()
     FileSpec.builder("foo", "Test")
@@ -258,17 +260,16 @@ class FileWritingTest {
         |import java.lang.System
         |import java.util.Date
         |import kotlin.Array
-        |import kotlin.Unit
         |
         |public class Test {
         |${"\t"}public val madeFreshDate: Date
         |
-        |${"\t"}public fun main(args: Array<String>): Unit {
+        |${"\t"}public fun main(args: Array<String>) {
         |${"\t\t"}System.out.println("Hello World!");
         |${"\t"}}
         |}
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -291,7 +292,7 @@ class FileWritingTest {
         |
         |public class Taco
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 

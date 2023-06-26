@@ -30,12 +30,16 @@ public class PropertySpec private constructor(
   private val tagMap: TagMap = builder.buildTagMap(),
   private val delegateOriginatingElementsHolder: OriginatingElementsHolder = builder.buildOriginatingElements(),
   private val contextReceivers: ContextReceivers = builder.buildContextReceivers(),
-) : Taggable by tagMap, OriginatingElementsHolder by delegateOriginatingElementsHolder, ContextReceivable by contextReceivers {
+) : Taggable by tagMap,
+  OriginatingElementsHolder by delegateOriginatingElementsHolder,
+  ContextReceivable by contextReceivers,
+  Annotatable,
+  Documentable {
   public val mutable: Boolean = builder.mutable
   public val name: String = builder.name
   public val type: TypeName = builder.type
-  public val kdoc: CodeBlock = builder.kdoc.build()
-  public val annotations: List<AnnotationSpec> = builder.annotations.toImmutableList()
+  override val kdoc: CodeBlock = builder.kdoc.build()
+  override val annotations: List<AnnotationSpec> = builder.annotations.toImmutableList()
   public val modifiers: Set<KModifier> = builder.modifiers.toImmutableSet()
   public val typeVariables: List<TypeVariableName> = builder.typeVariables.toImmutableList()
   public val initializer: CodeBlock? = builder.initializer
@@ -49,18 +53,12 @@ public class PropertySpec private constructor(
       typeVariables.none { it.isReified } ||
         (getter != null || setter != null) &&
         (getter == null || KModifier.INLINE in getter.modifiers) &&
-        (setter == null || KModifier.INLINE in setter.modifiers)
+        (setter == null || KModifier.INLINE in setter.modifiers),
     ) {
       "only type parameters of properties with inline getters and/or setters can be reified!"
     }
     require(mutable || setter == null) {
       "only a mutable property can have a setter"
-    }
-    if (contextReceiverTypes.isNotEmpty()) {
-      requireNotNull(getter) { "properties with context receivers require a $GETTER" }
-      if (mutable) {
-        requireNotNull(setter) { "mutable properties with context receivers require a $SETTER" }
-      }
     }
   }
 
@@ -70,7 +68,7 @@ public class PropertySpec private constructor(
     withInitializer: Boolean = true,
     emitKdoc: Boolean = true,
     inline: Boolean = false,
-    inlineAnnotations: Boolean = inline
+    inlineAnnotations: Boolean = inline,
   ) {
     val isInlineProperty = getter?.modifiers?.contains(KModifier.INLINE) ?: false &&
       (!mutable || setter?.modifiers?.contains(KModifier.INLINE) ?: false)
@@ -103,7 +101,7 @@ public class PropertySpec private constructor(
       val initializerFormat = if (initializer.hasStatements()) "%L" else "«%L»"
       codeWriter.emitCode(
         codeBlock = CodeBlock.of(initializerFormat, initializer),
-        isConstantContext = KModifier.CONST in modifiers
+        isConstantContext = KModifier.CONST in modifiers,
       )
     }
     codeWriter.emitWhereBlock(typeVariables)
@@ -173,60 +171,34 @@ public class PropertySpec private constructor(
 
   public class Builder internal constructor(
     internal val name: String,
-    internal val type: TypeName
+    internal val type: TypeName,
   ) : Taggable.Builder<Builder>,
     OriginatingElementsHolder.Builder<Builder>,
-    ContextReceivable.Builder<Builder> {
+    ContextReceivable.Builder<Builder>,
+    Annotatable.Builder<Builder>,
+    Documentable.Builder<Builder> {
     internal var isPrimaryConstructorParameter = false
     internal var mutable = false
-    internal val kdoc = CodeBlock.builder()
     internal var initializer: CodeBlock? = null
     internal var delegated = false
     internal var getter: FunSpec? = null
     internal var setter: FunSpec? = null
     internal var receiverType: TypeName? = null
 
-    public val annotations: MutableList<AnnotationSpec> = mutableListOf()
     public val modifiers: MutableList<KModifier> = mutableListOf()
     public val typeVariables: MutableList<TypeVariableName> = mutableListOf()
     override val tags: MutableMap<KClass<*>, Any> = mutableMapOf()
+    override val kdoc: CodeBlock.Builder = CodeBlock.builder()
     override val originatingElements: MutableList<Element> = mutableListOf()
+    override val annotations: MutableList<AnnotationSpec> = mutableListOf()
+
+    @ExperimentalKotlinPoetApi
     override val contextReceiverTypes: MutableList<TypeName> = mutableListOf()
 
     /** True to create a `var` instead of a `val`. */
     public fun mutable(mutable: Boolean = true): Builder = apply {
       this.mutable = mutable
     }
-
-    public fun addKdoc(format: String, vararg args: Any): Builder = apply {
-      kdoc.add(format, *args)
-    }
-
-    public fun addKdoc(block: CodeBlock): Builder = apply {
-      kdoc.add(block)
-    }
-
-    public fun addAnnotations(annotationSpecs: Iterable<AnnotationSpec>): Builder = apply {
-      annotations += annotationSpecs
-    }
-
-    public fun addAnnotation(annotationSpec: AnnotationSpec): Builder = apply {
-      annotations += annotationSpec
-    }
-
-    public fun addAnnotation(annotation: ClassName): Builder = apply {
-      annotations += AnnotationSpec.builder(annotation).build()
-    }
-
-    @DelicateKotlinPoetApi(
-      message = "Java reflection APIs don't give complete information on Kotlin types. Consider " +
-        "using the kotlinpoet-metadata APIs instead."
-    )
-    public fun addAnnotation(annotation: Class<*>): Builder =
-      addAnnotation(annotation.asClassName())
-
-    public fun addAnnotation(annotation: KClass<*>): Builder =
-      addAnnotation(annotation.asClassName())
 
     public fun addModifiers(vararg modifiers: KModifier): Builder = apply {
       this.modifiers += modifiers
@@ -276,17 +248,44 @@ public class PropertySpec private constructor(
 
     @DelicateKotlinPoetApi(
       message = "Java reflection APIs don't give complete information on Kotlin types. Consider " +
-        "using the kotlinpoet-metadata APIs instead."
+        "using the kotlinpoet-metadata APIs instead.",
     )
     public fun receiver(receiverType: Type): Builder = receiver(receiverType.asTypeName())
 
     public fun receiver(receiverType: KClass<*>): Builder = receiver(receiverType.asTypeName())
 
+    //region Overrides for binary compatibility
+    @Suppress("RedundantOverride")
+    override fun addAnnotation(annotationSpec: AnnotationSpec): Builder = super.addAnnotation(annotationSpec)
+
+    @Suppress("RedundantOverride")
+    override fun addAnnotations(annotationSpecs: Iterable<AnnotationSpec>): Builder =
+      super.addAnnotations(annotationSpecs)
+
+    @Suppress("RedundantOverride")
+    override fun addAnnotation(annotation: ClassName): Builder = super.addAnnotation(annotation)
+
+    @DelicateKotlinPoetApi(
+      message = "Java reflection APIs don't give complete information on Kotlin types. Consider " +
+        "using the kotlinpoet-metadata APIs instead.",
+    )
+    override fun addAnnotation(annotation: Class<*>): Builder = super.addAnnotation(annotation)
+
+    @Suppress("RedundantOverride")
+    override fun addAnnotation(annotation: KClass<*>): Builder = super.addAnnotation(annotation)
+
+    @Suppress("RedundantOverride")
+    override fun addKdoc(format: String, vararg args: Any): Builder = super.addKdoc(format, *args)
+
+    @Suppress("RedundantOverride")
+    override fun addKdoc(block: CodeBlock): Builder = super.addKdoc(block)
+    //endregion
+
     public fun build(): PropertySpec {
       if (KModifier.INLINE in modifiers) {
         throw IllegalArgumentException(
           "KotlinPoet doesn't allow setting the inline modifier on " +
-            "properties. You should mark either the getter, the setter, or both inline."
+            "properties. You should mark either the getter, the setter, or both inline.",
         )
       }
       for (it in modifiers) {
@@ -300,7 +299,7 @@ public class PropertySpec private constructor(
     @JvmStatic public fun builder(
       name: String,
       type: TypeName,
-      vararg modifiers: KModifier
+      vararg modifiers: KModifier,
     ): Builder {
       return Builder(name, type).addModifiers(*modifiers)
     }
@@ -311,32 +310,32 @@ public class PropertySpec private constructor(
     @JvmStatic public fun builder(
       name: String,
       type: KClass<*>,
-      vararg modifiers: KModifier
+      vararg modifiers: KModifier,
     ): Builder = builder(name, type.asTypeName(), *modifiers)
 
     @JvmStatic public fun builder(
       name: String,
       type: TypeName,
-      modifiers: Iterable<KModifier>
+      modifiers: Iterable<KModifier>,
     ): Builder {
       return Builder(name, type).addModifiers(modifiers)
     }
 
     @DelicateKotlinPoetApi(
       message = "Java reflection APIs don't give complete information on Kotlin types. Consider " +
-        "using the kotlinpoet-metadata APIs instead."
+        "using the kotlinpoet-metadata APIs instead.",
     )
     @JvmStatic
     public fun builder(
       name: String,
       type: Type,
-      modifiers: Iterable<KModifier>
+      modifiers: Iterable<KModifier>,
     ): Builder = builder(name, type.asTypeName(), modifiers)
 
     @JvmStatic public fun builder(
       name: String,
       type: KClass<*>,
-      modifiers: Iterable<KModifier>
+      modifiers: Iterable<KModifier>,
     ): Builder = builder(name, type.asTypeName(), modifiers)
   }
 }

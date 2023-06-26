@@ -36,7 +36,7 @@ class TypeVariableNameTest {
       """
       |public fun <T> foo(): T? = null
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -51,7 +51,7 @@ class TypeVariableNameTest {
       """
       |public fun <T, U> foo(): T? = null
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -65,7 +65,7 @@ class TypeVariableNameTest {
       """
       |public fun <T : java.io.Serializable> foo(): T? = null
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -80,7 +80,7 @@ class TypeVariableNameTest {
       """
       |public fun <T : java.io.Serializable, U : java.lang.Runnable> foo(): T? = null
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -94,7 +94,7 @@ class TypeVariableNameTest {
       """
       |public fun <T> foo(): T? where T : java.io.Serializable, T : java.lang.Runnable = null
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -108,7 +108,7 @@ class TypeVariableNameTest {
     assertThat(funSpec.toString()).isEqualTo(
       "public fun <T, U> foo(): " +
         "T? where T : java.io.Serializable, T : java.lang.Runnable, " +
-        "U : java.util.Comparator, U : kotlin.Cloneable = null\n"
+        "U : java.util.Comparator, U : kotlin.Cloneable = null\n",
     )
   }
 
@@ -122,7 +122,7 @@ class TypeVariableNameTest {
       .build()
     assertThat(funSpec.toString()).isEqualTo(
       "public fun <T, U : kotlin.Cloneable, V> foo(): " +
-        "T? where T : java.io.Serializable, T : java.lang.Runnable = null\n"
+        "T? where T : java.io.Serializable, T : java.lang.Runnable = null\n",
     )
   }
 
@@ -134,7 +134,7 @@ class TypeVariableNameTest {
       """
       |public class Taco<T : kotlin.Number>
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -146,7 +146,7 @@ class TypeVariableNameTest {
       """
       |public class Taco<in E : kotlin.Number>
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -158,7 +158,7 @@ class TypeVariableNameTest {
       """
       |public class Taco<out E : kotlin.Number>
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -176,11 +176,11 @@ class TypeVariableNameTest {
       .build()
     assertThat(funSpec.toString()).isEqualTo(
       """
-      |public inline fun <reified T> printMembers(): kotlin.Unit {
+      |public inline fun <reified T> printMembers() {
       |  println(T::class.members)
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -192,7 +192,7 @@ class TypeVariableNameTest {
       """
       |public class Taco<E : kotlin.Any>
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -204,7 +204,7 @@ class TypeVariableNameTest {
       """
       |public class Taco<E>
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -218,7 +218,7 @@ class TypeVariableNameTest {
       """
       |public class Taco<E>
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -232,7 +232,7 @@ class TypeVariableNameTest {
       """
       |public class Taco<E>
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -246,9 +246,38 @@ class TypeVariableNameTest {
       """
       |public class Taco<T>
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
   class GenericClass<T>
+
+  @Test fun equalsAndHashCode() {
+    val typeVariableName1 = TypeVariableName("E", listOf(Number::class.asTypeName()), KModifier.IN)
+
+    val typeVariableName2 = TypeVariableName("E", listOf(Number::class.asTypeName()), KModifier.IN)
+    assertThat(typeVariableName1).isEqualTo(typeVariableName2)
+    assertThat(typeVariableName1.hashCode()).isEqualTo(typeVariableName2.hashCode())
+    assertThat(typeVariableName1.toString()).isEqualTo(typeVariableName2.toString())
+
+    assertThat(typeVariableName1.copy(nullable = true)).isNotEqualTo(typeVariableName1)
+
+    assertThat(
+      typeVariableName1.copy(
+        annotations = listOf(AnnotationSpec.builder(Suppress::class.asTypeName()).build()),
+      ),
+    ).isNotEqualTo(typeVariableName1)
+
+    assertThat(typeVariableName1.copy(bounds = listOf(Runnable::class.asTypeName()))).isNotEqualTo(typeVariableName1)
+
+    assertThat(typeVariableName1.copy(reified = true)).isNotEqualTo(typeVariableName1)
+  }
+
+  @Test fun equalsAndHashCodeIgnoreTags() {
+    val typeVariableName = TypeVariableName("E", listOf(Number::class.asTypeName()), KModifier.IN)
+    val tagged = typeVariableName.copy(tags = mapOf(String::class to "test"))
+
+    assertThat(typeVariableName).isEqualTo(tagged)
+    assertThat(typeVariableName.hashCode()).isEqualTo(tagged.hashCode())
+  }
 }

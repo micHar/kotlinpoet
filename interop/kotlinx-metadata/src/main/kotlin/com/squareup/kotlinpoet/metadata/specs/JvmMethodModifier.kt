@@ -24,13 +24,13 @@ import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 public enum class JvmMethodModifier : JvmModifier {
   STATIC {
     override fun annotationSpec(): AnnotationSpec = AnnotationSpec.builder(
-      JvmStatic::class.asClassName()
+      JvmStatic::class.asClassName(),
     ).build()
   },
   SYNCHRONIZED {
     override fun annotationSpec(): AnnotationSpec = AnnotationSpec.builder(
-      Synchronized::class.asClassName()
+      Synchronized::class.asClassName(),
     ).build()
   },
-  DEFAULT
+  DEFAULT,
 }

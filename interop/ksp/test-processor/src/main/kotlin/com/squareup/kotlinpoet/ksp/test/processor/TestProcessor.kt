@@ -22,13 +22,18 @@ import com.google.devtools.ksp.isConstructor
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
+import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSTypeReference
+import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.ksp.TypeParameterResolver
 import com.squareup.kotlinpoet.ksp.addOriginatingKSFile
 import com.squareup.kotlinpoet.ksp.kspDependencies
 import com.squareup.kotlinpoet.ksp.originatingKSFiles
@@ -53,6 +58,15 @@ class TestProcessor(private val env: SymbolProcessorEnvironment) : SymbolProcess
     return emptyList()
   }
 
+  private fun KSTypeReference.toValidatedTypeName(resolver: TypeParameterResolver): TypeName {
+    // Validates that both toTypeName() and resolve() return the same TypeName.
+    // Regression for https://github.com/square/kotlinpoet/issues/1513.
+    val typeName = toTypeName(resolver)
+    val resolvedTypeName = resolve().toTypeName(resolver)
+    check(typeName == resolvedTypeName)
+    return typeName
+  }
+
   private fun process(decl: KSAnnotated) {
     check(decl is KSClassDeclaration)
 
@@ -64,7 +78,34 @@ class TestProcessor(private val env: SymbolProcessorEnvironment) : SymbolProcess
         addAnnotations(
           decl.annotations
             .filterNot { it.shortName.getShortName() == "ExampleAnnotation" }
-            .map { it.toAnnotationSpec() }.asIterable()
+            .map { it.toAnnotationSpec(it.shortName.getShortName() == "ExampleAnnotationWithDefaults") }
+            .asIterable(),
+        )
+        val allSupertypes = decl.superTypes.toList()
+        val (superclassReference, superInterfaces) = if (allSupertypes.isNotEmpty()) {
+          val superClass = allSupertypes.firstOrNull {
+            val resolved = it.resolve()
+            resolved is KSClassDeclaration && resolved.classKind == ClassKind.CLASS
+          }
+          if (superClass != null) {
+            superClass to allSupertypes.filterNot { it == superClass }
+          } else {
+            null to allSupertypes
+          }
+        } else {
+          null to allSupertypes
+        }
+
+        superclassReference?.let {
+          val typeName = it.toValidatedTypeName(decl.typeParameters.toTypeParameterResolver())
+          if (typeName != ANY) {
+            superclass(typeName)
+          }
+        }
+        addSuperinterfaces(
+          superInterfaces.map { it.toValidatedTypeName(decl.typeParameters.toTypeParameterResolver()) }
+            .filterNot { it == ANY }
+            .toList(),
         )
       }
     val classTypeParams = decl.typeParameters.toTypeParameterResolver()
@@ -77,7 +118,7 @@ class TestProcessor(private val env: SymbolProcessorEnvironment) : SymbolProcess
             it
           }
         }
-      }
+      },
     )
 
     // Add properties
@@ -85,13 +126,13 @@ class TestProcessor(private val env: SymbolProcessorEnvironment) : SymbolProcess
       classBuilder.addProperty(
         PropertySpec.builder(
           property.simpleName.getShortName(),
-          property.type.toTypeName(classTypeParams).let {
+          property.type.toValidatedTypeName(classTypeParams).let {
             if (unwrapTypeAliases) {
               it.unwrapTypeAlias()
             } else {
               it
             }
-          }
+          },
         )
           .addOriginatingKSFile(decl.containingFile!!)
           .mutable(property.isMutable)
@@ -100,10 +141,10 @@ class TestProcessor(private val env: SymbolProcessorEnvironment) : SymbolProcess
             addModifiers(property.modifiers.mapNotNull { it.toKModifier() })
             addAnnotations(
               property.annotations
-                .map { it.toAnnotationSpec() }.asIterable()
+                .map { it.toAnnotationSpec() }.asIterable(),
             )
           }
-          .build()
+          .build(),
       )
     }
 
@@ -126,11 +167,11 @@ class TestProcessor(private val env: SymbolProcessorEnvironment) : SymbolProcess
                   it
                 }
               }
-            }
+            },
           )
           .addParameters(
             function.parameters.map { parameter ->
-              val parameterType = parameter.type.toTypeName(functionTypeParams).let {
+              val parameterType = parameter.type.toValidatedTypeName(functionTypeParams).let {
                 if (unwrapTypeAliases) {
                   it.unwrapTypeAlias()
                 } else {
@@ -140,18 +181,18 @@ class TestProcessor(private val env: SymbolProcessorEnvironment) : SymbolProcess
               parameter.name?.let {
                 ParameterSpec.builder(it.getShortName(), parameterType).build()
               } ?: ParameterSpec.unnamed(parameterType)
-            }
+            },
           )
           .returns(
-            function.returnType!!.toTypeName(functionTypeParams).let {
+            function.returnType!!.toValidatedTypeName(functionTypeParams).let {
               if (unwrapTypeAliases) {
                 it.unwrapTypeAlias()
               } else {
                 it
               }
-            }
+            },
           )
-          .build()
+          .build(),
       )
     }
 

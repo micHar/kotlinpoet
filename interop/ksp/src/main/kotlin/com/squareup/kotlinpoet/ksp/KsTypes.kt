@@ -51,8 +51,8 @@ public fun KSType.toClassName(): ClassName {
  *                          defined by [KSType.arguments].
  */
 public fun KSType.toTypeName(
-  typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY
-): TypeName = toTypeName(typeParamResolver, emptyList())
+  typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY,
+): TypeName = toTypeName(typeParamResolver, arguments)
 
 internal fun KSType.toTypeName(
   typeParamResolver: TypeParameterResolver,
@@ -136,7 +136,7 @@ private fun mapTypeArgumentsFromTypeAliasToAbbreviatedType(
  *                          defined by [KSType.arguments].
  */
 public fun KSTypeParameter.toTypeVariableName(
-  typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY
+  typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY,
 ): TypeVariableName {
   val typeVarName = name.getShortName()
   val typeVarBounds = bounds.map { it.toTypeName(typeParamResolver) }.toList()
@@ -157,7 +157,7 @@ public fun KSTypeParameter.toTypeVariableName(
  *                          defined by [KSType.arguments].
  */
 public fun KSTypeArgument.toTypeName(
-  typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY
+  typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY,
 ): TypeName {
   val type = this.type ?: return STAR
   return when (variance) {
@@ -177,7 +177,7 @@ public fun KSTypeArgument.toTypeName(
  *                          defined by [KSType.arguments].
  */
 public fun KSTypeReference.toTypeName(
-  typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY
+  typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY,
 ): TypeName {
   return resolve().toTypeName(typeParamResolver, element?.typeArguments.orEmpty())
 }

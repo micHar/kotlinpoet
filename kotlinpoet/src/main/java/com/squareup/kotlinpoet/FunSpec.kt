@@ -37,18 +37,22 @@ public class FunSpec private constructor(
   builder: Builder,
   private val tagMap: TagMap = builder.buildTagMap(),
   private val delegateOriginatingElementsHolder: OriginatingElementsHolder = builder.buildOriginatingElements(),
-  private val contextReceivers: ContextReceivers = builder.buildContextReceivers()
-) : Taggable by tagMap, OriginatingElementsHolder by delegateOriginatingElementsHolder, ContextReceivable by contextReceivers {
+  private val contextReceivers: ContextReceivers = builder.buildContextReceivers(),
+) : Taggable by tagMap,
+  OriginatingElementsHolder by delegateOriginatingElementsHolder,
+  ContextReceivable by contextReceivers,
+  Annotatable,
+  Documentable {
   public val name: String = builder.name
-  public val kdoc: CodeBlock = builder.kdoc.build()
+  override val kdoc: CodeBlock = builder.kdoc.build()
   public val returnKdoc: CodeBlock = builder.returnKdoc
   public val receiverKdoc: CodeBlock = builder.receiverKdoc
-  public val annotations: List<AnnotationSpec> = builder.annotations.toImmutableList()
+  override val annotations: List<AnnotationSpec> = builder.annotations.toImmutableList()
   public val modifiers: Set<KModifier> = builder.modifiers.toImmutableSet()
   public val typeVariables: List<TypeVariableName> = builder.typeVariables.toImmutableList()
   public val receiverType: TypeName? = builder.receiverType
 
-  public val returnType: TypeName? = builder.returnType
+  public val returnType: TypeName = builder.returnType
   public val parameters: List<ParameterSpec> = builder.parameters.toImmutableList()
   public val delegateConstructor: String? = builder.delegateConstructor
   public val delegateConstructorArguments: List<CodeBlock> =
@@ -84,7 +88,7 @@ public class FunSpec private constructor(
     codeWriter: CodeWriter,
     enclosingName: String?,
     implicitModifiers: Set<KModifier>,
-    includeKdocTags: Boolean = false
+    includeKdocTags: Boolean = false,
   ) {
     if (includeKdocTags) {
       codeWriter.emitKdoc(kdocWithTags())
@@ -165,16 +169,14 @@ public class FunSpec private constructor(
       }
     }
 
-    if (returnType != null) {
+    if (returnType != UNIT || emitUnitReturnType()) {
       codeWriter.emitCode(": %T", returnType)
-    } else if (emitUnitReturnType()) {
-      codeWriter.emitCode(": %T", UNIT)
     }
 
     if (delegateConstructor != null) {
       codeWriter.emitCode(
         delegateConstructorArguments
-          .joinToCode(prefix = " : $delegateConstructor(", suffix = ")")
+          .joinToCode(prefix = " : $delegateConstructor(", suffix = ")"),
       )
     }
   }
@@ -217,10 +219,7 @@ public class FunSpec private constructor(
   /**
    * Returns whether [Unit] should be emitted as the return type.
    *
-   * [Unit] is emitted as return type on a function unless:
-   *   - It's a constructor
-   *   - It's a getter/setter on a property
-   *   - It's an expression body
+   * [Unit] is emitted as return type on a function only if it is an expression body.
    */
   private fun emitUnitReturnType(): Boolean {
     if (isConstructor) {
@@ -231,7 +230,7 @@ public class FunSpec private constructor(
       return false
     }
 
-    return body.asExpressionBody() == null
+    return body.asExpressionBody() != null
   }
 
   private fun CodeBlock.asExpressionBody(): CodeBlock? {
@@ -277,7 +276,7 @@ public class FunSpec private constructor(
       codeWriter = this,
       enclosingName = "Constructor",
       implicitModifiers = TypeSpec.Kind.CLASS.implicitFunctionModifiers(),
-      includeKdocTags = true
+      includeKdocTags = true,
     )
   }
 
@@ -303,50 +302,29 @@ public class FunSpec private constructor(
   }
 
   public class Builder internal constructor(
-    internal val name: String
-  ) : Taggable.Builder<Builder>, OriginatingElementsHolder.Builder<Builder>, ContextReceivable.Builder<Builder> {
-    internal val kdoc = CodeBlock.builder()
+    internal val name: String,
+  ) : Taggable.Builder<Builder>,
+    OriginatingElementsHolder.Builder<Builder>,
+    ContextReceivable.Builder<Builder>,
+    Annotatable.Builder<Builder>,
+    Documentable.Builder<Builder> {
     internal var returnKdoc = CodeBlock.EMPTY
     internal var receiverKdoc = CodeBlock.EMPTY
     internal var receiverType: TypeName? = null
-    internal var returnType: TypeName? = null
+    internal var returnType: TypeName = UNIT
     internal var delegateConstructor: String? = null
     internal var delegateConstructorArguments = listOf<CodeBlock>()
     internal val body = CodeBlock.builder()
-
-    public val annotations: MutableList<AnnotationSpec> = mutableListOf()
+    override val kdoc: CodeBlock.Builder = CodeBlock.builder()
+    override val annotations: MutableList<AnnotationSpec> = mutableListOf()
     public val modifiers: MutableList<KModifier> = mutableListOf()
     public val typeVariables: MutableList<TypeVariableName> = mutableListOf()
     public val parameters: MutableList<ParameterSpec> = mutableListOf()
     override val tags: MutableMap<KClass<*>, Any> = mutableMapOf()
     override val originatingElements: MutableList<Element> = mutableListOf()
+
+    @ExperimentalKotlinPoetApi
     override val contextReceiverTypes: MutableList<TypeName> = mutableListOf()
-
-    public fun addKdoc(format: String, vararg args: Any): Builder = apply {
-      kdoc.add(format, *args)
-    }
-
-    public fun addKdoc(block: CodeBlock): Builder = apply {
-      kdoc.add(block)
-    }
-
-    public fun addAnnotations(annotationSpecs: Iterable<AnnotationSpec>): Builder = apply {
-      this.annotations += annotationSpecs
-    }
-
-    public fun addAnnotation(annotationSpec: AnnotationSpec): Builder = apply {
-      annotations += annotationSpec
-    }
-
-    public fun addAnnotation(annotation: ClassName): Builder = apply {
-      annotations += AnnotationSpec.builder(annotation).build()
-    }
-
-    public fun addAnnotation(annotation: Class<*>): Builder =
-      addAnnotation(annotation.asClassName())
-
-    public fun addAnnotation(annotation: KClass<*>): Builder =
-      addAnnotation(annotation.asClassName())
 
     public fun addModifiers(vararg modifiers: KModifier): Builder = apply {
       this.modifiers += modifiers
@@ -393,7 +371,7 @@ public class FunSpec private constructor(
 
     @JvmOverloads public fun receiver(
       receiverType: TypeName,
-      kdoc: CodeBlock = CodeBlock.EMPTY
+      kdoc: CodeBlock = CodeBlock.EMPTY,
     ): Builder = apply {
       check(!name.isConstructor) { "$name cannot have receiver type" }
       this.receiverType = receiverType
@@ -402,29 +380,29 @@ public class FunSpec private constructor(
 
     @JvmOverloads public fun receiver(
       receiverType: Type,
-      kdoc: CodeBlock = CodeBlock.EMPTY
+      kdoc: CodeBlock = CodeBlock.EMPTY,
     ): Builder = receiver(receiverType.asTypeName(), kdoc)
 
     public fun receiver(
       receiverType: Type,
       kdoc: String,
-      vararg args: Any
+      vararg args: Any,
     ): Builder = receiver(receiverType, CodeBlock.of(kdoc, args))
 
     @JvmOverloads public fun receiver(
       receiverType: KClass<*>,
-      kdoc: CodeBlock = CodeBlock.EMPTY
+      kdoc: CodeBlock = CodeBlock.EMPTY,
     ): Builder = receiver(receiverType.asTypeName(), kdoc)
 
     public fun receiver(
       receiverType: KClass<*>,
       kdoc: String,
-      vararg args: Any
+      vararg args: Any,
     ): Builder = receiver(receiverType, CodeBlock.of(kdoc, args))
 
     @JvmOverloads public fun returns(
       returnType: TypeName,
-      kdoc: CodeBlock = CodeBlock.EMPTY
+      kdoc: CodeBlock = CodeBlock.EMPTY,
     ): Builder = apply {
       check(!name.isConstructor && !name.isAccessor) { "$name cannot have a return type" }
       this.returnType = returnType
@@ -439,7 +417,7 @@ public class FunSpec private constructor(
 
     @JvmOverloads public fun returns(
       returnType: KClass<*>,
-      kdoc: CodeBlock = CodeBlock.EMPTY
+      kdoc: CodeBlock = CodeBlock.EMPTY,
     ): Builder = returns(returnType.asTypeName(), kdoc)
 
     public fun returns(returnType: KClass<*>, kdoc: String, vararg args: Any): Builder =
@@ -511,7 +489,7 @@ public class FunSpec private constructor(
     public fun addParameter(
       name: String,
       type: KClass<*>,
-      modifiers: Iterable<KModifier>
+      modifiers: Iterable<KModifier>,
     ): Builder = addParameter(name, type.asTypeName(), modifiers)
 
     public fun addCode(format: String, vararg args: Any?): Builder = apply {
@@ -558,6 +536,33 @@ public class FunSpec private constructor(
       body.clear()
     }
 
+    //region Overrides for binary compatibility
+    @Suppress("RedundantOverride")
+    override fun addAnnotation(annotationSpec: AnnotationSpec): Builder = super.addAnnotation(annotationSpec)
+
+    @Suppress("RedundantOverride")
+    override fun addAnnotations(annotationSpecs: Iterable<AnnotationSpec>): Builder =
+      super.addAnnotations(annotationSpecs)
+
+    @Suppress("RedundantOverride")
+    override fun addAnnotation(annotation: ClassName): Builder = super.addAnnotation(annotation)
+
+    @DelicateKotlinPoetApi(
+      message = "Java reflection APIs don't give complete information on Kotlin types. Consider " +
+        "using the kotlinpoet-metadata APIs instead.",
+    )
+    override fun addAnnotation(annotation: Class<*>): Builder = super.addAnnotation(annotation)
+
+    @Suppress("RedundantOverride")
+    override fun addAnnotation(annotation: KClass<*>): Builder = super.addAnnotation(annotation)
+
+    @Suppress("RedundantOverride")
+    override fun addKdoc(format: String, vararg args: Any): Builder = super.addKdoc(format, *args)
+
+    @Suppress("RedundantOverride")
+    override fun addKdoc(block: CodeBlock): Builder = super.addKdoc(block)
+    //endregion
+
     public fun build(): FunSpec {
       check(typeVariables.isEmpty() || !name.isAccessor) { "$name cannot have type variables" }
       check(!(name == GETTER && parameters.isNotEmpty())) { "$name cannot have parameters" }
@@ -581,6 +586,9 @@ public class FunSpec private constructor(
 
     @JvmStatic public fun builder(name: String): Builder = Builder(name)
 
+    /** Create a new function builder from [MemberName.simpleName] */
+    @JvmStatic public fun builder(memberName: MemberName): Builder = Builder(memberName.simpleName)
+
     @JvmStatic public fun constructorBuilder(): Builder = Builder(CONSTRUCTOR)
 
     @JvmStatic public fun getterBuilder(): Builder = Builder(GETTER)
@@ -589,7 +597,7 @@ public class FunSpec private constructor(
 
     @DelicateKotlinPoetApi(
       message = "Element APIs don't give complete information on Kotlin types. Consider using" +
-        " the kotlinpoet-metadata APIs instead."
+        " the kotlinpoet-metadata APIs instead.",
     )
     @JvmStatic
     public fun overriding(method: ExecutableElement): Builder {
@@ -597,7 +605,7 @@ public class FunSpec private constructor(
       require(
         Modifier.PRIVATE !in modifiers &&
           Modifier.FINAL !in modifiers &&
-          Modifier.STATIC !in modifiers
+          Modifier.STATIC !in modifiers,
       ) {
         "cannot override method with modifiers: $modifiers"
       }
@@ -630,7 +638,7 @@ public class FunSpec private constructor(
         funBuilder.addAnnotation(
           AnnotationSpec.builder(Throws::class)
             .addMember(throwsValueString, *method.thrownTypes.toTypedArray())
-            .build()
+            .build(),
         )
       }
 
@@ -640,13 +648,13 @@ public class FunSpec private constructor(
     @Deprecated(
       message = "Element APIs don't give complete information on Kotlin types. Consider using" +
         " the kotlinpoet-metadata APIs instead.",
-      level = WARNING
+      level = WARNING,
     )
     @JvmStatic
     public fun overriding(
       method: ExecutableElement,
       enclosing: DeclaredType,
-      types: Types
+      types: Types,
     ): Builder {
       val executableType = types.asMemberOf(enclosing, method) as ExecutableType
       val resolvedParameterTypes = executableType.parameterTypes

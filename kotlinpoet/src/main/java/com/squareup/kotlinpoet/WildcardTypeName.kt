@@ -27,7 +27,7 @@ public class WildcardTypeName private constructor(
   inTypes: List<TypeName>,
   nullable: Boolean = false,
   annotations: List<AnnotationSpec> = emptyList(),
-  tags: Map<KClass<*>, Any> = emptyMap()
+  tags: Map<KClass<*>, Any> = emptyMap(),
 ) : TypeName(nullable, annotations, TagMap(tags)) {
   public val outTypes: List<TypeName> = outTypes.toImmutableList()
   public val inTypes: List<TypeName> = inTypes.toImmutableList()
@@ -39,7 +39,7 @@ public class WildcardTypeName private constructor(
   override fun copy(
     nullable: Boolean,
     annotations: List<AnnotationSpec>,
-    tags: Map<KClass<*>, Any>
+    tags: Map<KClass<*>, Any>,
   ): WildcardTypeName {
     return WildcardTypeName(outTypes, inTypes, nullable, annotations, tags)
   }
@@ -50,6 +50,26 @@ public class WildcardTypeName private constructor(
       outTypes == STAR.outTypes -> out.emit("*")
       else -> out.emitCode("out·%T", outTypes[0])
     }
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+    if (!super.equals(other)) return false
+
+    other as WildcardTypeName
+
+    if (outTypes != other.outTypes) return false
+    if (inTypes != other.inTypes) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = super.hashCode()
+    result = 31 * result + outTypes.hashCode()
+    result = 31 * result + inTypes.hashCode()
+    return result
   }
 
   public companion object {
@@ -63,7 +83,7 @@ public class WildcardTypeName private constructor(
 
     @DelicateKotlinPoetApi(
       message = "Java reflection APIs don't give complete information on Kotlin types. Consider " +
-        "using the kotlinpoet-metadata APIs instead."
+        "using the kotlinpoet-metadata APIs instead.",
     )
     @JvmStatic
     public fun producerOf(outType: Type): WildcardTypeName =
@@ -81,7 +101,7 @@ public class WildcardTypeName private constructor(
 
     @DelicateKotlinPoetApi(
       message = "Java reflection APIs don't give complete information on Kotlin types. Consider " +
-        "using the kotlinpoet-metadata APIs instead."
+        "using the kotlinpoet-metadata APIs instead.",
     )
     @JvmStatic
     public fun consumerOf(inType: Type): WildcardTypeName =
@@ -92,7 +112,7 @@ public class WildcardTypeName private constructor(
 
     internal fun get(
       mirror: javax.lang.model.type.WildcardType,
-      typeVariables: Map<TypeParameterElement, TypeVariableName>
+      typeVariables: Map<TypeParameterElement, TypeVariableName>,
     ): TypeName {
       val outType = mirror.extendsBound
       return if (outType == null) {
@@ -109,11 +129,11 @@ public class WildcardTypeName private constructor(
 
     internal fun get(
       wildcardName: WildcardType,
-      map: MutableMap<Type, TypeVariableName>
+      map: MutableMap<Type, TypeVariableName>,
     ): TypeName {
       return WildcardTypeName(
         wildcardName.upperBounds.map { get(it, map = map) },
-        wildcardName.lowerBounds.map { get(it, map = map) }
+        wildcardName.lowerBounds.map { get(it, map = map) },
       )
     }
   }
@@ -121,7 +141,7 @@ public class WildcardTypeName private constructor(
 
 @DelicateKotlinPoetApi(
   message = "Mirror APIs don't give complete information on Kotlin types. Consider using" +
-    " the kotlinpoet-metadata APIs instead."
+    " the kotlinpoet-metadata APIs instead.",
 )
 @JvmName("get")
 public fun javax.lang.model.type.WildcardType.asWildcardTypeName(): TypeName =
@@ -129,7 +149,7 @@ public fun javax.lang.model.type.WildcardType.asWildcardTypeName(): TypeName =
 
 @DelicateKotlinPoetApi(
   message = "Java reflection APIs don't give complete information on Kotlin types. Consider using" +
-    " the kotlinpoet-metadata APIs instead."
+    " the kotlinpoet-metadata APIs instead.",
 )
 @JvmName("get")
 public fun WildcardType.asWildcardTypeName(): TypeName =

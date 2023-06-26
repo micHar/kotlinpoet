@@ -33,7 +33,7 @@ class LambdaTypeNameTest {
     val typeName = LambdaTypeName.get(
       receiver = Int::class.asClassName(),
       parameters = listOf(),
-      returnType = Unit::class.asTypeName()
+      returnType = Unit::class.asTypeName(),
     )
     assertThat(typeName.toString()).isEqualTo("kotlin.Int.() -> kotlin.Unit")
   }
@@ -42,13 +42,13 @@ class LambdaTypeNameTest {
     val annotation = IsAnnotated::class.java.getAnnotation(HasSomeAnnotation::class.java)
     val typeName = LambdaTypeName.get(
       receiver = Int::class.asClassName().copy(
-        annotations = listOf(AnnotationSpec.get(annotation, includeDefaultValues = true))
+        annotations = listOf(AnnotationSpec.get(annotation, includeDefaultValues = true)),
       ),
       parameters = listOf(),
-      returnType = Unit::class.asTypeName()
+      returnType = Unit::class.asTypeName(),
     )
     assertThat(typeName.toString()).isEqualTo(
-      "(@com.squareup.kotlinpoet.LambdaTypeNameTest.HasSomeAnnotation kotlin.Int).() -> kotlin.Unit"
+      "(@com.squareup.kotlinpoet.LambdaTypeNameTest.HasSomeAnnotation kotlin.Int).() -> kotlin.Unit",
     )
   }
 
@@ -57,10 +57,34 @@ class LambdaTypeNameTest {
       receiver = Int::class.asTypeName(),
       parameters = listOf(),
       returnType = Unit::class.asTypeName(),
-      contextReceivers = listOf(STRING)
+      contextReceivers = listOf(STRING),
     )
     assertThat(typeName.toString()).isEqualTo(
-      "context(kotlin.String) kotlin.Int.() -> kotlin.Unit"
+      "context(kotlin.String) kotlin.Int.() -> kotlin.Unit",
+    )
+  }
+
+  @Test fun nullableFunctionWithContextReceiver() {
+    val typeName = LambdaTypeName.get(
+      receiver = Int::class.asTypeName(),
+      parameters = listOf(),
+      returnType = Unit::class.asTypeName(),
+      contextReceivers = listOf(STRING),
+    ).copy(nullable = true)
+    assertThat(typeName.toString()).isEqualTo(
+      "(context(kotlin.String) kotlin.Int.() -> kotlin.Unit)?",
+    )
+  }
+
+  @Test fun suspendingFunctionWithContextReceiver() {
+    val typeName = LambdaTypeName.get(
+      receiver = Int::class.asTypeName(),
+      parameters = listOf(),
+      returnType = Unit::class.asTypeName(),
+      contextReceivers = listOf(STRING),
+    ).copy(suspending = true)
+    assertThat(typeName.toString()).isEqualTo(
+      "suspend context(kotlin.String) kotlin.Int.() -> kotlin.Unit",
     )
   }
 
@@ -69,10 +93,10 @@ class LambdaTypeNameTest {
       Int::class.asTypeName(),
       listOf(),
       Unit::class.asTypeName(),
-      listOf(STRING, BOOLEAN)
+      listOf(STRING, BOOLEAN),
     )
     assertThat(typeName.toString()).isEqualTo(
-      "context(kotlin.String, kotlin.Boolean) kotlin.Int.() -> kotlin.Unit"
+      "context(kotlin.String, kotlin.Boolean) kotlin.Int.() -> kotlin.Unit",
     )
   }
 
@@ -82,11 +106,11 @@ class LambdaTypeNameTest {
       Int::class.asTypeName(),
       listOf(),
       Unit::class.asTypeName(),
-      listOf(genericType)
+      listOf(genericType),
     )
 
     assertThat(typeName.toString()).isEqualTo(
-      "context(T) kotlin.Int.() -> kotlin.Unit"
+      "context(T) kotlin.Int.() -> kotlin.Unit",
     )
   }
 
@@ -96,11 +120,11 @@ class LambdaTypeNameTest {
       Int::class.asTypeName(),
       listOf(),
       Unit::class.asTypeName(),
-      listOf(annotatedType)
+      listOf(annotatedType),
     )
 
     assertThat(typeName.toString()).isEqualTo(
-      "context(@com.squareup.kotlinpoet.FunSpecTest.TestAnnotation kotlin.String) kotlin.Int.() -> kotlin.Unit"
+      "context(@com.squareup.kotlinpoet.FunSpecTest.TestAnnotation kotlin.String) kotlin.Int.() -> kotlin.Unit",
     )
   }
 
@@ -110,9 +134,9 @@ class LambdaTypeNameTest {
         parameters = arrayOf(
           ParameterSpec.builder("foo", Int::class)
             .addAnnotation(Nullable::class)
-            .build()
+            .build(),
         ),
-        returnType = Unit::class.asTypeName()
+        returnType = Unit::class.asTypeName(),
       )
     }.hasMessageThat().isEqualTo("Parameters with annotations are not allowed")
   }
@@ -123,9 +147,9 @@ class LambdaTypeNameTest {
         parameters = arrayOf(
           ParameterSpec.builder("foo", Int::class)
             .addModifiers(VARARG)
-            .build()
+            .build(),
         ),
-        returnType = Unit::class.asTypeName()
+        returnType = Unit::class.asTypeName(),
       )
     }.hasMessageThat().isEqualTo("Parameters with modifiers are not allowed")
   }
@@ -136,9 +160,9 @@ class LambdaTypeNameTest {
         parameters = arrayOf(
           ParameterSpec.builder("foo", Int::class)
             .defaultValue("42")
-            .build()
+            .build(),
         ),
-        returnType = Unit::class.asTypeName()
+        returnType = Unit::class.asTypeName(),
       )
     }.hasMessageThat().isEqualTo("Parameters with default values are not allowed")
   }
@@ -146,11 +170,11 @@ class LambdaTypeNameTest {
   @Test fun lambdaReturnType() {
     val returnTypeName = LambdaTypeName.get(
       parameters = arrayOf(Int::class.asTypeName()),
-      returnType = Unit::class.asTypeName()
+      returnType = Unit::class.asTypeName(),
     )
     val typeName = LambdaTypeName.get(
       parameters = arrayOf(Int::class.asTypeName()),
-      returnType = returnTypeName
+      returnType = returnTypeName,
     )
     assertThat(typeName.toString())
       .isEqualTo("(kotlin.Int) -> ((kotlin.Int) -> kotlin.Unit)")
@@ -159,13 +183,58 @@ class LambdaTypeNameTest {
   @Test fun lambdaParameterType() {
     val parameterTypeName = LambdaTypeName.get(
       parameters = arrayOf(Int::class.asTypeName()),
-      returnType = Int::class.asTypeName()
+      returnType = Int::class.asTypeName(),
     )
     val typeName = LambdaTypeName.get(
       parameters = arrayOf(parameterTypeName),
-      returnType = Unit::class.asTypeName()
+      returnType = Unit::class.asTypeName(),
     )
     assertThat(typeName.toString())
       .isEqualTo("((kotlin.Int) -> kotlin.Int) -> kotlin.Unit")
+  }
+
+  @Test fun equalsAndHashCode() {
+    val lambdaTypeName1 = LambdaTypeName.get(
+      parameters = arrayOf(INT),
+      returnType = INT,
+    )
+    val lambdaTypeName2 = LambdaTypeName.get(
+      parameters = arrayOf(INT),
+      returnType = INT,
+    )
+    assertThat(lambdaTypeName1).isEqualTo(lambdaTypeName2)
+    assertThat(lambdaTypeName1.hashCode()).isEqualTo(lambdaTypeName2.hashCode())
+    assertThat(lambdaTypeName1.toString()).isEqualTo(lambdaTypeName2.toString())
+
+    val differentReceiver = LambdaTypeName.get(
+      parameters = arrayOf(INT),
+      returnType = INT,
+      receiver = ANY,
+    )
+    assertThat(differentReceiver).isNotEqualTo(lambdaTypeName1)
+
+    assertThat(lambdaTypeName1.copy(nullable = true)).isNotEqualTo(lambdaTypeName1)
+
+    assertThat(
+      lambdaTypeName1.copy(
+        annotations = listOf(
+          AnnotationSpec.builder(Suppress::class.asClassName()).build(),
+        ),
+      ),
+    ).isNotEqualTo(lambdaTypeName1)
+
+    assertThat(lambdaTypeName1.copy(suspending = true)).isNotEqualTo(lambdaTypeName1)
+  }
+
+  @Test fun equalsAndHashCodeIgnoreTags() {
+    val lambdaTypeName = LambdaTypeName.get(
+      parameters = arrayOf(INT),
+      returnType = INT,
+    )
+
+    val tagged = lambdaTypeName.copy(tags = mapOf(String::class to "test"))
+
+    assertThat(tagged).isEqualTo(lambdaTypeName)
+    assertThat(tagged.hashCode()).isEqualTo(lambdaTypeName.hashCode())
   }
 }

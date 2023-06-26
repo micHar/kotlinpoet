@@ -16,10 +16,9 @@
 package com.squareup.kotlinpoet
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.kotlinpoet.FunSpec.Companion.GETTER
-import com.squareup.kotlinpoet.FunSpec.Companion.SETTER
 import com.squareup.kotlinpoet.KModifier.EXTERNAL
 import com.squareup.kotlinpoet.KModifier.PRIVATE
+import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.io.Serializable
 import java.util.function.Function
@@ -49,7 +48,7 @@ class PropertySpecTest {
       .setter(
         FunSpec.setterBuilder()
           .addModifiers(PRIVATE)
-          .build()
+          .build(),
       )
       .build()
 
@@ -58,7 +57,7 @@ class PropertySpecTest {
       |var foo: kotlin.String
       |  private set
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -70,7 +69,7 @@ class PropertySpecTest {
         .setter(
           FunSpec.setterBuilder()
             .addStatement("body()")
-            .build()
+            .build(),
         )
         .build()
     }.hasMessageThat().isEqualTo("parameterless setter cannot have code")
@@ -82,12 +81,12 @@ class PropertySpecTest {
       .getter(
         FunSpec.getterBuilder()
           .addModifiers(EXTERNAL)
-          .build()
+          .build(),
       )
       .setter(
         FunSpec.setterBuilder()
           .addModifiers(EXTERNAL)
-          .build()
+          .build(),
       )
       .build()
 
@@ -97,7 +96,7 @@ class PropertySpecTest {
       |  external get
       |  external set
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -108,10 +107,38 @@ class PropertySpecTest {
           FunSpec.getterBuilder()
             .addModifiers(EXTERNAL)
             .addStatement("return %S", "foo")
-            .build()
+            .build(),
         )
         .build()
     }.hasMessageThat().isEqualTo("external getter cannot have code")
+  }
+
+  @Test fun publicGetterAndSetter() {
+    val prop = PropertySpec.builder("foo", String::class)
+      .mutable()
+      .getter(
+        FunSpec.getterBuilder()
+          .addModifiers(PUBLIC)
+          .addStatement("return %S", "_foo")
+          .build(),
+      )
+      .setter(
+        FunSpec.setterBuilder()
+          .addModifiers(PUBLIC)
+          .addParameter("value", String::class)
+          .build(),
+      )
+      .build()
+
+    assertThat(prop.toString()).isEqualTo(
+      """
+      |var foo: kotlin.String
+      |  public get() = "_foo"
+      |  public set(`value`) {
+      |  }
+      |
+      """.trimMargin(),
+    )
   }
 
   @Test fun inlineSingleAccessorVal() {
@@ -120,7 +147,7 @@ class PropertySpecTest {
         FunSpec.getterBuilder()
           .addModifiers(KModifier.INLINE)
           .addStatement("return %S", "foo")
-          .build()
+          .build(),
       )
       .build()
 
@@ -129,7 +156,7 @@ class PropertySpecTest {
       |inline val foo: kotlin.String
       |  get() = "foo"
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -140,7 +167,7 @@ class PropertySpecTest {
         FunSpec.getterBuilder()
           .addModifiers(KModifier.INLINE)
           .addStatement("return %S", "foo")
-          .build()
+          .build(),
       )
       .build()
 
@@ -149,7 +176,7 @@ class PropertySpecTest {
       |var foo: kotlin.String
       |  inline get() = "foo"
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -160,13 +187,13 @@ class PropertySpecTest {
         FunSpec.getterBuilder()
           .addModifiers(KModifier.INLINE)
           .addStatement("return %S", "foo")
-          .build()
+          .build(),
       )
       .setter(
         FunSpec.setterBuilder()
           .addModifiers(KModifier.INLINE)
           .addParameter("value", String::class)
-          .build()
+          .build(),
       )
       .build()
 
@@ -177,7 +204,7 @@ class PropertySpecTest {
       |  set(`value`) {
       |  }
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -188,7 +215,7 @@ class PropertySpecTest {
         .build()
     }.hasMessageThat().isEqualTo(
       "KotlinPoet doesn't allow setting the inline modifier on " +
-        "properties. You should mark either the getter, the setter, or both inline."
+        "properties. You should mark either the getter, the setter, or both inline.",
     )
   }
 
@@ -211,7 +238,7 @@ class PropertySpecTest {
       """
       |val `object`: kotlin.String
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -223,7 +250,7 @@ class PropertySpecTest {
       """
       |var `object`: kotlin.String
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -236,7 +263,7 @@ class PropertySpecTest {
       """
       |external val foo: kotlin.String
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -248,7 +275,7 @@ class PropertySpecTest {
       """
       |val `with-hyphen`: kotlin.String
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -266,13 +293,13 @@ class PropertySpecTest {
         FunSpec.getterBuilder()
           .addModifiers(KModifier.INLINE)
           .addStatement("return %S", 42)
-          .build()
+          .build(),
       )
       .setter(
         FunSpec.setterBuilder()
           .addModifiers(KModifier.INLINE)
           .addParameter("value", Int::class)
-          .build()
+          .build(),
       )
       .addOriginatingElement(originatingElement)
       .build()
@@ -299,7 +326,7 @@ class PropertySpecTest {
       .addAnnotation(
         AnnotationSpec.builder(JvmName::class.asClassName())
           .addMember("name = %S", "jvmWord")
-          .build()
+          .build(),
       )
 
     val javaWord = AnnotationSpec.builder(JvmName::class.asClassName())
@@ -321,7 +348,7 @@ class PropertySpecTest {
         FunSpec.getterBuilder()
           .addModifiers(KModifier.INLINE)
           .addStatement("return stuff as %T", t)
-          .build()
+          .build(),
       )
       .build()
     assertThat(prop.toString()).isEqualTo(
@@ -329,7 +356,7 @@ class PropertySpecTest {
       |private inline val <T : kotlin.Any> kotlin.reflect.KClass<T>.someFunction: T
       |  get() = stuff as T
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -343,7 +370,7 @@ class PropertySpecTest {
       .getter(
         FunSpec.getterBuilder()
           .addStatement("return %S", "")
-          .build()
+          .build(),
       )
       .build()
     assertThat(prop.toString()).isEqualTo(
@@ -351,7 +378,7 @@ class PropertySpecTest {
       |private val <T, R : kotlin.Any> java.util.function.Function<T, R>.`property`: kotlin.String where T : java.io.Serializable, T : kotlin.Cloneable
       |  get() = ""
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -364,7 +391,7 @@ class PropertySpecTest {
         FunSpec.getterBuilder()
           .addModifiers(KModifier.INLINE)
           .addStatement("return stuff as %T", t)
-          .build()
+          .build(),
       )
       .build()
     assertThat(prop.toString()).isEqualTo(
@@ -372,7 +399,7 @@ class PropertySpecTest {
       |private inline val <reified T> kotlin.reflect.KClass<T>.someFunction: T
       |  get() = stuff as T
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -382,7 +409,7 @@ class PropertySpecTest {
         .addTypeVariable(TypeVariableName("T").copy(reified = true))
         .build()
     }.hasMessageThat().isEqualTo(
-      "only type parameters of properties with inline getters and/or setters can be reified!"
+      "only type parameters of properties with inline getters and/or setters can be reified!",
     )
   }
 
@@ -393,11 +420,11 @@ class PropertySpecTest {
         .getter(
           FunSpec.getterBuilder()
             .addStatement("return %S", "")
-            .build()
+            .build(),
         )
         .build()
     }.hasMessageThat().isEqualTo(
-      "only type parameters of properties with inline getters and/or setters can be reified!"
+      "only type parameters of properties with inline getters and/or setters can be reified!",
     )
   }
 
@@ -410,11 +437,11 @@ class PropertySpecTest {
           FunSpec.setterBuilder()
             .addParameter("value", String::class)
             .addStatement("println()")
-            .build()
+            .build(),
         )
         .build()
     }.hasMessageThat().isEqualTo(
-      "only type parameters of properties with inline getters and/or setters can be reified!"
+      "only type parameters of properties with inline getters and/or setters can be reified!",
     )
   }
 
@@ -426,18 +453,18 @@ class PropertySpecTest {
         .getter(
           FunSpec.getterBuilder()
             .addStatement("return %S", "")
-            .build()
+            .build(),
         )
         .setter(
           FunSpec.setterBuilder()
             .addModifiers(KModifier.INLINE)
             .addParameter("value", String::class)
             .addStatement("println()")
-            .build()
+            .build(),
         )
         .build()
     }.hasMessageThat().isEqualTo(
-      "only type parameters of properties with inline getters and/or setters can be reified!"
+      "only type parameters of properties with inline getters and/or setters can be reified!",
     )
   }
 
@@ -449,7 +476,7 @@ class PropertySpecTest {
             .addModifiers(KModifier.INLINE)
             .addParameter("value", String::class)
             .addStatement("println()")
-            .build()
+            .build(),
         )
         .build()
     }.hasMessageThat().isEqualTo("only a mutable property can have a setter")
@@ -474,7 +501,7 @@ class PropertySpecTest {
       |}
       |
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -505,7 +532,7 @@ class PropertySpecTest {
       | */
       |val topping: kotlin.String
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -520,7 +547,7 @@ class PropertySpecTest {
       | */
       |val topping: kotlin.String
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -531,7 +558,7 @@ class PropertySpecTest {
         FunSpec.getterBuilder()
           .addKdoc("Simple multiplier")
           .addStatement("return %L * 5", "field")
-          .build()
+          .build(),
       )
       .build()
 
@@ -543,7 +570,7 @@ class PropertySpecTest {
       |   */
       |  get() = field * 5
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -553,7 +580,7 @@ class PropertySpecTest {
       .addProperty(
         PropertySpec.builder("FOO", String::class, KModifier.CONST)
           .initializer("%S", text)
-          .build()
+          .build(),
       )
       .build()
     assertThat(spec.toString()).isEqualTo(
@@ -564,7 +591,7 @@ class PropertySpecTest {
       |
       |public const val FOO: String = "This is a long string with a newline\nin the middle."
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -582,7 +609,7 @@ class PropertySpecTest {
       |
       |public val foo: @Annotation () -> Unit
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -595,14 +622,14 @@ class PropertySpecTest {
           .getter(
             FunSpec.getterBuilder()
               .addStatement("return %S", "foo")
-              .build()
+              .build(),
           )
           .setter(
             FunSpec.setterBuilder()
               .addParameter("foo", String::class)
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .build()
     assertThat(file.toString()).isEqualTo(
@@ -617,46 +644,8 @@ class PropertySpecTest {
           set(foo) {
           }
 
-      """.trimIndent()
+      """.trimIndent(),
     )
-  }
-
-  @Test fun varWithContextReceiverWithoutCustomAccessors() {
-    val mutablePropertySpecBuilder = {
-      PropertySpec.builder("foo", STRING)
-        .mutable()
-        .contextReceivers(INT)
-    }
-
-    assertThrows<IllegalArgumentException> {
-      mutablePropertySpecBuilder()
-        .getter(
-          FunSpec.getterBuilder()
-            .build()
-        )
-        .build()
-    }.hasMessageThat()
-      .isEqualTo("mutable properties with context receivers require a $SETTER")
-
-    assertThrows<IllegalArgumentException> {
-      mutablePropertySpecBuilder()
-        .setter(
-          FunSpec.setterBuilder()
-            .build()
-        )
-        .build()
-    }.hasMessageThat()
-      .isEqualTo("properties with context receivers require a $GETTER")
-  }
-
-  @Test fun valWithContextReceiverWithoutGetter() {
-    assertThrows<IllegalArgumentException> {
-      PropertySpec.builder("foo", STRING)
-        .mutable(false)
-        .contextReceivers(INT)
-        .build()
-    }.hasMessageThat()
-      .isEqualTo("properties with context receivers require a $GETTER")
   }
 
   @Test fun varWithContextReceiver() {
@@ -666,16 +655,16 @@ class PropertySpecTest {
       .getter(
         FunSpec.getterBuilder()
           .addStatement("return \"\"")
-          .build()
+          .build(),
       )
       .setter(
         FunSpec.setterBuilder()
           .addParameter(
             ParameterSpec.builder("value", STRING)
-              .build()
+              .build(),
           )
           .addStatement("")
-          .build()
+          .build(),
       )
       .build()
 
@@ -688,7 +677,7 @@ class PropertySpecTest {
       |
       |  }
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -699,7 +688,7 @@ class PropertySpecTest {
       .getter(
         FunSpec.getterBuilder()
           .addStatement("return length")
-          .build()
+          .build(),
       )
       .build()
 
@@ -709,12 +698,13 @@ class PropertySpecTest {
       |val foo: kotlin.Int
       |  get() = length
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
   @OptIn(DelicateKotlinPoetApi::class)
-  @Test fun annotatedValWithContextReceiver() {
+  @Test
+  fun annotatedValWithContextReceiver() {
     val propertySpec = PropertySpec.builder("foo", INT)
       .mutable(false)
       .addAnnotation(AnnotationSpec.get(TestAnnotation()))
@@ -722,7 +712,7 @@ class PropertySpecTest {
       .getter(
         FunSpec.getterBuilder()
           .addStatement("return length")
-          .build()
+          .build(),
       )
       .build()
 
@@ -733,7 +723,7 @@ class PropertySpecTest {
       |val foo: kotlin.Int
       |  get() = length
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 }

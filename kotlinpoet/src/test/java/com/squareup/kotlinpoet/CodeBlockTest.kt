@@ -76,7 +76,7 @@ class CodeBlockTest {
       .addNamed("\"I like \" + %text:S + \". Do you like \" + %text:S + \"?\"", map)
       .build()
     assertThat(block.toString()).isEqualTo(
-      "\"I like \" + \"tacos\" + \". Do you like \" + \"tacos\" + \"?\""
+      "\"I like \" + \"tacos\" + \". Do you like \" + \"tacos\" + \"?\"",
     )
   }
 
@@ -113,7 +113,7 @@ class CodeBlockTest {
       .build()
 
     assertThat(block.toString()).isEqualTo(
-      "java.lang.System.out.println(\"Let's eat some tacos\");"
+      "java.lang.System.out.println(\"Let's eat some tacos\");",
     )
   }
 
@@ -202,7 +202,7 @@ class CodeBlockTest {
       |- Format parts: [«, print(, «, %L, », ), \n, »]
       |- Arguments: [1 + 1]
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -221,7 +221,7 @@ class CodeBlockTest {
       |- Format parts: [«, print(, %L, », ), \n, »]
       |- Arguments: [1 + 1]
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -251,47 +251,47 @@ class CodeBlockTest {
   @Test fun withoutPrefixMatching() {
     assertThat(
       CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")
-        .withoutPrefix(CodeBlock.of(""))
+        .withoutPrefix(CodeBlock.of("")),
     )
       .isEqualTo(CodeBlock.of("abcd %S efgh %S ijkl", "x", "y"))
     assertThat(
       CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")
-        .withoutPrefix(CodeBlock.of("ab"))
+        .withoutPrefix(CodeBlock.of("ab")),
     )
       .isEqualTo(CodeBlock.of("cd %S efgh %S ijkl", "x", "y"))
     assertThat(
       CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")
-        .withoutPrefix(CodeBlock.of("abcd "))
+        .withoutPrefix(CodeBlock.of("abcd ")),
     )
       .isEqualTo(CodeBlock.of("%S efgh %S ijkl", "x", "y"))
     assertThat(
       CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")
-        .withoutPrefix(CodeBlock.of("abcd %S", "x"))
+        .withoutPrefix(CodeBlock.of("abcd %S", "x")),
     )
       .isEqualTo(CodeBlock.of(" efgh %S ijkl", "y"))
     assertThat(
       CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")
-        .withoutPrefix(CodeBlock.of("abcd %S ef", "x"))
+        .withoutPrefix(CodeBlock.of("abcd %S ef", "x")),
     )
       .isEqualTo(CodeBlock.of("gh %S ijkl", "y"))
     assertThat(
       CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")
-        .withoutPrefix(CodeBlock.of("abcd %S efgh ", "x"))
+        .withoutPrefix(CodeBlock.of("abcd %S efgh ", "x")),
     )
       .isEqualTo(CodeBlock.of("%S ijkl", "y"))
     assertThat(
       CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")
-        .withoutPrefix(CodeBlock.of("abcd %S efgh %S", "x", "y"))
+        .withoutPrefix(CodeBlock.of("abcd %S efgh %S", "x", "y")),
     )
       .isEqualTo(CodeBlock.of(" ijkl"))
     assertThat(
       CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")
-        .withoutPrefix(CodeBlock.of("abcd %S efgh %S ij", "x", "y"))
+        .withoutPrefix(CodeBlock.of("abcd %S efgh %S ij", "x", "y")),
     )
       .isEqualTo(CodeBlock.of("kl"))
     assertThat(
       CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")
-        .withoutPrefix(CodeBlock.of("abcd %S efgh %S ijkl", "x", "y"))
+        .withoutPrefix(CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")),
     )
       .isEqualTo(CodeBlock.of(""))
   }
@@ -299,47 +299,47 @@ class CodeBlockTest {
   @Test fun withoutPrefixNoArgs() {
     assertThat(
       CodeBlock.of("abcd %% efgh %% ijkl")
-        .withoutPrefix(CodeBlock.of(""))
+        .withoutPrefix(CodeBlock.of("")),
     )
       .isEqualTo(CodeBlock.of("abcd %% efgh %% ijkl"))
     assertThat(
       CodeBlock.of("abcd %% efgh %% ijkl")
-        .withoutPrefix(CodeBlock.of("ab"))
+        .withoutPrefix(CodeBlock.of("ab")),
     )
       .isEqualTo(CodeBlock.of("cd %% efgh %% ijkl"))
     assertThat(
       CodeBlock.of("abcd %% efgh %% ijkl")
-        .withoutPrefix(CodeBlock.of("abcd "))
+        .withoutPrefix(CodeBlock.of("abcd ")),
     )
       .isEqualTo(CodeBlock.of("%% efgh %% ijkl"))
     assertThat(
       CodeBlock.of("abcd %% efgh %% ijkl")
-        .withoutPrefix(CodeBlock.of("abcd %%"))
+        .withoutPrefix(CodeBlock.of("abcd %%")),
     )
       .isEqualTo(CodeBlock.of(" efgh %% ijkl"))
     assertThat(
       CodeBlock.of("abcd %% efgh %% ijkl")
-        .withoutPrefix(CodeBlock.of("abcd %% ef"))
+        .withoutPrefix(CodeBlock.of("abcd %% ef")),
     )
       .isEqualTo(CodeBlock.of("gh %% ijkl"))
     assertThat(
       CodeBlock.of("abcd %% efgh %% ijkl")
-        .withoutPrefix(CodeBlock.of("abcd %% efgh "))
+        .withoutPrefix(CodeBlock.of("abcd %% efgh ")),
     )
       .isEqualTo(CodeBlock.of("%% ijkl"))
     assertThat(
       CodeBlock.of("abcd %% efgh %% ijkl")
-        .withoutPrefix(CodeBlock.of("abcd %% efgh %%"))
+        .withoutPrefix(CodeBlock.of("abcd %% efgh %%")),
     )
       .isEqualTo(CodeBlock.of(" ijkl"))
     assertThat(
       CodeBlock.of("abcd %% efgh %% ijkl")
-        .withoutPrefix(CodeBlock.of("abcd %% efgh %% ij"))
+        .withoutPrefix(CodeBlock.of("abcd %% efgh %% ij")),
     )
       .isEqualTo(CodeBlock.of("kl"))
     assertThat(
       CodeBlock.of("abcd %% efgh %% ijkl")
-        .withoutPrefix(CodeBlock.of("abcd %% efgh %% ijkl"))
+        .withoutPrefix(CodeBlock.of("abcd %% efgh %% ijkl")),
     )
       .isEqualTo(CodeBlock.of(""))
   }
@@ -347,12 +347,12 @@ class CodeBlockTest {
   @Test fun withoutPrefixArgMismatch() {
     assertThat(
       CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")
-        .withoutPrefix(CodeBlock.of("abcd %S efgh %S ij", "x", "z"))
+        .withoutPrefix(CodeBlock.of("abcd %S efgh %S ij", "x", "z")),
     )
       .isNull()
     assertThat(
       CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")
-        .withoutPrefix(CodeBlock.of("abcd %S efgh %S ij", "z", "y"))
+        .withoutPrefix(CodeBlock.of("abcd %S efgh %S ij", "z", "y")),
     )
       .isNull()
   }
@@ -360,12 +360,12 @@ class CodeBlockTest {
   @Test fun withoutPrefixFormatPartMismatch() {
     assertThat(
       CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")
-        .withoutPrefix(CodeBlock.of("abcd %S efgx %S ij", "x", "y"))
+        .withoutPrefix(CodeBlock.of("abcd %S efgx %S ij", "x", "y")),
     )
       .isNull()
     assertThat(
       CodeBlock.of("abcd %S efgh %% ijkl", "x")
-        .withoutPrefix(CodeBlock.of("abcd %% efgh %S ij", "x"))
+        .withoutPrefix(CodeBlock.of("abcd %% efgh %S ij", "x")),
     )
       .isNull()
   }
@@ -373,12 +373,12 @@ class CodeBlockTest {
   @Test fun withoutPrefixTooShort() {
     assertThat(
       CodeBlock.of("abcd %S efgh %S", "x", "y")
-        .withoutPrefix(CodeBlock.of("abcd %S efgh %S ijkl", "x", "y"))
+        .withoutPrefix(CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")),
     )
       .isNull()
     assertThat(
       CodeBlock.of("abcd %S efgh", "x")
-        .withoutPrefix(CodeBlock.of("abcd %S efgh %S ijkl", "x", "y"))
+        .withoutPrefix(CodeBlock.of("abcd %S efgh %S ijkl", "x", "y")),
     )
       .isNull()
   }
@@ -420,7 +420,7 @@ class CodeBlockTest {
 
   @Test fun trimMultipleNoArgPlaceholders() {
     assertThat(
-      CodeBlock.of("«return if (x > %L) %S else %S»", 1, "a", "b").trim()
+      CodeBlock.of("«return if (x > %L) %S else %S»", 1, "a", "b").trim(),
     )
       .isEqualTo(CodeBlock.of("return if (x > %L) %S else %S", 1, "a", "b"))
   }
@@ -463,7 +463,7 @@ class CodeBlockTest {
       |  println(element)
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -479,7 +479,7 @@ class CodeBlockTest {
       |  println(element)
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -499,7 +499,7 @@ class CodeBlockTest {
       |  println("bar")
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -510,16 +510,14 @@ class CodeBlockTest {
           .beginControlFlow("if (%1S == %1S)", "Very long string that would wrap the line ")
           .nextControlFlow("else if (%1S == %1S)", "Long string that would wrap the line 2 ")
           .endControlFlow()
-          .build()
+          .build(),
       )
       .build()
     assertThat(file.toString()).isEqualTo(
       """
       |package com.squareup.tacos
       |
-      |import kotlin.Unit
-      |
-      |public fun test(): Unit {
+      |public fun test() {
       |  if ("Very long string that would wrap the line " ==
       |      "Very long string that would wrap the line ") {
       |  } else if ("Long string that would wrap the line 2 " ==
@@ -527,7 +525,7 @@ class CodeBlockTest {
       |  }
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -544,7 +542,7 @@ class CodeBlockTest {
       |
       |Statement with no args
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -593,7 +591,40 @@ class CodeBlockTest {
       |  )
       |)
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
+  }
+
+  // https://github.com/square/kotlinpoet/issues/1236
+  @Test fun dontEscapeBackslashesInRawStrings() {
+    // println("ESCAPE '\\'") -> ESCAPE '\'
+    assertThat(CodeBlock.of("%S", "ESCAPE '\\'").toString()).isEqualTo("\"ESCAPE '\\\\'\"")
+    // println("""ESCAPE '\'""") -> ESCAPE '\'
+    assertThat(CodeBlock.of("%P", """ESCAPE '\'""").toString()).isEqualTo("\"\"\"ESCAPE '\\'\"\"\"")
+  }
+
+  // https://github.com/square/kotlinpoet/issues/1381
+  @Test fun useUnderscoresOnLargeDecimalLiterals() {
+    assertThat(CodeBlock.of("%L", 10000).toString()).isEqualTo("10_000")
+    assertThat(CodeBlock.of("%L", 100000L).toString()).isEqualTo("100_000")
+    assertThat(CodeBlock.of("%L", Int.MIN_VALUE).toString()).isEqualTo("-2_147_483_648")
+    assertThat(CodeBlock.of("%L", Int.MAX_VALUE).toString()).isEqualTo("2_147_483_647")
+    assertThat(CodeBlock.of("%L", Long.MIN_VALUE).toString()).isEqualTo("-9_223_372_036_854_775_808")
+    assertThat(CodeBlock.of("%L", 10000.123).toString()).isEqualTo("10_000.123")
+    assertThat(CodeBlock.of("%L", 3.0).toString()).isEqualTo("3.0")
+    assertThat(CodeBlock.of("%L", 10000.123f).toString()).isEqualTo("10_000.123")
+    assertThat(CodeBlock.of("%L", 10000.123456789012).toString()).isEqualTo("10_000.123456789011")
+    assertThat(CodeBlock.of("%L", 1281.toShort()).toString()).isEqualTo("1_281")
+
+    assertThat(CodeBlock.of("%S", 10000).toString()).isEqualTo("\"10000\"")
+    assertThat(CodeBlock.of("%S", 100000L).toString()).isEqualTo("\"100000\"")
+    assertThat(CodeBlock.of("%S", Int.MIN_VALUE).toString()).isEqualTo("\"-2147483648\"")
+    assertThat(CodeBlock.of("%S", Int.MAX_VALUE).toString()).isEqualTo("\"2147483647\"")
+    assertThat(CodeBlock.of("%S", Long.MIN_VALUE).toString()).isEqualTo("\"-9223372036854775808\"")
+    assertThat(CodeBlock.of("%S", 10000.123).toString()).isEqualTo("\"10000.123\"")
+    assertThat(CodeBlock.of("%S", 3.0).toString()).isEqualTo("\"3.0\"")
+    assertThat(CodeBlock.of("%S", 10000.123f).toString()).isEqualTo("\"10000.123\"")
+    assertThat(CodeBlock.of("%S", 10000.12345678901).toString()).isEqualTo("\"10000.12345678901\"")
+    assertThat(CodeBlock.of("%S", 1281.toShort()).toString()).isEqualTo("\"1281\"")
   }
 }

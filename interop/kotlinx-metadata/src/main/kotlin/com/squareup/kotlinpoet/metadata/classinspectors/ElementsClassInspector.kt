@@ -24,6 +24,7 @@ import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.AnnotationSpec.UseSiteTarget.FILE
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.DelicateKotlinPoetApi
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
@@ -60,17 +61,6 @@ import com.squareup.kotlinpoet.metadata.specs.KM_PROPERTY_COMPARATOR
 import com.squareup.kotlinpoet.metadata.specs.MethodData
 import com.squareup.kotlinpoet.metadata.specs.PropertyData
 import com.squareup.kotlinpoet.metadata.toKmClass
-import kotlinx.metadata.KmClass
-import kotlinx.metadata.KmDeclarationContainer
-import kotlinx.metadata.KmPackage
-import kotlinx.metadata.jvm.JvmFieldSignature
-import kotlinx.metadata.jvm.JvmMethodSignature
-import kotlinx.metadata.jvm.KotlinClassMetadata
-import kotlinx.metadata.jvm.fieldSignature
-import kotlinx.metadata.jvm.getterSignature
-import kotlinx.metadata.jvm.setterSignature
-import kotlinx.metadata.jvm.signature
-import kotlinx.metadata.jvm.syntheticMethodForAnnotations
 import java.util.TreeMap
 import java.util.concurrent.ConcurrentHashMap
 import javax.lang.model.element.Element
@@ -84,6 +74,17 @@ import javax.lang.model.util.ElementFilter
 import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
 import kotlin.LazyThreadSafetyMode.NONE
+import kotlinx.metadata.KmClass
+import kotlinx.metadata.KmDeclarationContainer
+import kotlinx.metadata.KmPackage
+import kotlinx.metadata.jvm.JvmFieldSignature
+import kotlinx.metadata.jvm.JvmMethodSignature
+import kotlinx.metadata.jvm.KotlinClassMetadata
+import kotlinx.metadata.jvm.fieldSignature
+import kotlinx.metadata.jvm.getterSignature
+import kotlinx.metadata.jvm.setterSignature
+import kotlinx.metadata.jvm.signature
+import kotlinx.metadata.jvm.syntheticMethodForAnnotations
 
 private typealias ElementsModifier = javax.lang.model.element.Modifier
 
@@ -93,7 +94,7 @@ private typealias ElementsModifier = javax.lang.model.element.Modifier
 @KotlinPoetMetadataPreview
 public class ElementsClassInspector private constructor(
   private val elements: Elements,
-  private val types: Types
+  private val types: Types,
 ) : ClassInspector {
   private val typeElementCache = ConcurrentHashMap<ClassName, Optional<TypeElement>>()
   private val methodCache = ConcurrentHashMap<Pair<TypeElement, String>, Optional<ExecutableElement>>()
@@ -140,14 +141,14 @@ public class ElementsClassInspector private constructor(
   private fun lookupMethod(
     className: ClassName,
     methodSignature: JvmMethodSignature,
-    elementFilter: (Iterable<Element>) -> List<ExecutableElement>
+    elementFilter: (Iterable<Element>) -> List<ExecutableElement>,
   ): ExecutableElement? {
     return lookupTypeElement(className)?.lookupMethod(methodSignature, elementFilter)
   }
 
   private fun TypeElement.lookupMethod(
     methodSignature: JvmMethodSignature,
-    elementFilter: (Iterable<Element>) -> List<ExecutableElement>
+    elementFilter: (Iterable<Element>) -> List<ExecutableElement>,
   ): ExecutableElement? {
     val signatureString = methodSignature.asString()
     return methodCache.getOrPut(this to signatureString) {
@@ -167,10 +168,10 @@ public class ElementsClassInspector private constructor(
     }
   }
 
+  @OptIn(DelicateKotlinPoetApi::class)
   private fun VariableElement.annotationSpecs(): List<AnnotationSpec> {
-    @Suppress("DEPRECATION")
     return filterOutNullabilityAnnotations(
-      annotationMirrors.map { AnnotationSpec.get(it) }
+      annotationMirrors.map { AnnotationSpec.get(it) },
     )
   }
 
@@ -185,15 +186,15 @@ public class ElementsClassInspector private constructor(
     }
   }
 
+  @OptIn(DelicateKotlinPoetApi::class)
   private fun ExecutableElement.annotationSpecs(): List<AnnotationSpec> {
-    @Suppress("DEPRECATION")
     return filterOutNullabilityAnnotations(
-      annotationMirrors.map { AnnotationSpec.get(it) }
+      annotationMirrors.map { AnnotationSpec.get(it) },
     )
   }
 
+  @OptIn(DelicateKotlinPoetApi::class)
   private fun ExecutableElement.exceptionTypeNames(): List<TypeName> {
-    @Suppress("DEPRECATION")
     return thrownTypes.map { it.asTypeName() }
   }
 
@@ -215,7 +216,7 @@ public class ElementsClassInspector private constructor(
 
     return EnumEntryData(
       declarationContainer = declarationContainer,
-      annotations = entry.annotationSpecs()
+      annotations = entry.annotationSpecs(),
     )
   }
 
@@ -270,7 +271,7 @@ public class ElementsClassInspector private constructor(
    */
   private fun TypeElement.getAllMethods(
     pkg: PackageElement,
-    methodsAccumulator: SetMultimap<String, ExecutableElement>
+    methodsAccumulator: SetMultimap<String, ExecutableElement>,
   ) {
     for (superInterface in interfaces) {
       MoreTypes.asTypeElement(superInterface).getAllMethods(pkg, methodsAccumulator)
@@ -303,10 +304,11 @@ public class ElementsClassInspector private constructor(
     }
   }
 
+  @OptIn(DelicateKotlinPoetApi::class)
   override fun containerData(
     declarationContainer: KmDeclarationContainer,
     className: ClassName,
-    parentClassName: ClassName?
+    parentClassName: ClassName?,
   ): ContainerData {
     val typeElement: TypeElement = lookupTypeElement(className) ?: error("No class found for: $className.")
     val isCompanionObject = when (declarationContainer) {
@@ -340,7 +342,7 @@ public class ElementsClassInspector private constructor(
           isCompanionObject = isCompanionObject,
           hasGetter = property.getterSignature != null,
           hasSetter = property.setterSignature != null,
-          hasField = property.fieldSignature != null
+          hasField = property.fieldSignature != null,
         )
 
         val fieldData = property.fieldSignature?.let fieldDataLet@{ fieldSignature ->
@@ -387,7 +389,7 @@ public class ElementsClassInspector private constructor(
               // JvmField companion objects don't need JvmStatic, it's implicit
               isCompanionObject && isJvmField && it == JvmFieldModifier.STATIC
             },
-            constant = constant
+            constant = constant,
           )
         }
 
@@ -398,7 +400,7 @@ public class ElementsClassInspector private constructor(
             hasAnnotations = property.getterFlags.hasAnnotations,
             jvmInformationMethod = classIfCompanion.takeIf { it != typeElement }
               ?.lookupMethod(getterSignature, ElementFilter::methodsIn)
-              ?: method
+              ?: method,
           )
             ?: return@let MethodData.SYNTHETIC
         }
@@ -411,7 +413,7 @@ public class ElementsClassInspector private constructor(
             jvmInformationMethod = classIfCompanion.takeIf { it != typeElement }
               ?.lookupMethod(setterSignature, ElementFilter::methodsIn)
               ?: method,
-            knownIsOverride = getterData?.isOverride
+            knownIsOverride = getterData?.isOverride,
           )
             ?: return@let MethodData.SYNTHETIC
         }
@@ -435,10 +437,10 @@ public class ElementsClassInspector private constructor(
           if (isCompanionObject && JvmFieldModifier.STATIC in modifiers) {
             finalFieldData = fieldData.copy(
               jvmModifiers = fieldData.jvmModifiers
-                .filterNotTo(LinkedHashSet()) { it == JvmFieldModifier.STATIC }
+                .filterNotTo(LinkedHashSet()) { it == JvmFieldModifier.STATIC },
             )
             annotations += AnnotationSpec.builder(
-              JVM_STATIC
+              JVM_STATIC,
             ).build()
           }
         }
@@ -448,7 +450,7 @@ public class ElementsClassInspector private constructor(
           fieldData = finalFieldData,
           getterData = getterData,
           setterData = setterData,
-          isJvmField = isJvmField
+          isJvmField = isJvmField,
         )
       }
 
@@ -462,7 +464,7 @@ public class ElementsClassInspector private constructor(
             hasAnnotations = kmFunction.flags.hasAnnotations,
             jvmInformationMethod = classIfCompanion.takeIf { it != typeElement }
               ?.lookupMethod(signature, ElementFilter::methodsIn)
-              ?: method
+              ?: method,
           )
             ?: return@associateWithTo MethodData.SYNTHETIC
         } else {
@@ -496,7 +498,7 @@ public class ElementsClassInspector private constructor(
                 parameterAnnotations = constructor.parameters.indexedAnnotationSpecs(),
                 isSynthetic = false,
                 jvmModifiers = constructor.jvmModifiers(),
-                exceptions = constructor.exceptionTypeNames()
+                exceptions = constructor.exceptionTypeNames(),
               )
             } else {
               ConstructorData.EMPTY
@@ -507,7 +509,6 @@ public class ElementsClassInspector private constructor(
           className = className,
           annotations = if (declarationContainer.flags.hasAnnotations) {
             ClassInspectorUtil.createAnnotations {
-              @Suppress("DEPRECATION")
               addAll(typeElement.annotationMirrors.map { AnnotationSpec.get(it) })
             }
           } else {
@@ -515,7 +516,7 @@ public class ElementsClassInspector private constructor(
           },
           properties = propertyData,
           constructors = constructorData,
-          methods = methodData
+          methods = methodData,
         )
       }
       is KmPackage -> {
@@ -534,7 +535,7 @@ public class ElementsClassInspector private constructor(
               }
               @Suppress("DEPRECATION")
               AnnotationSpec.get(it)
-            }
+            },
           )
         }
         return FileData(
@@ -543,7 +544,7 @@ public class ElementsClassInspector private constructor(
           properties = propertyData,
           methods = methodData,
           className = className,
-          jvmName = jvmName
+          jvmName = jvmName,
         )
       }
       else -> TODO("Not implemented yet: ${declarationContainer.javaClass.simpleName}")
@@ -560,7 +561,7 @@ public class ElementsClassInspector private constructor(
     typeElement: TypeElement,
     hasAnnotations: Boolean,
     jvmInformationMethod: ExecutableElement = this,
-    knownIsOverride: Boolean? = null
+    knownIsOverride: Boolean? = null,
   ): MethodData {
     return MethodData(
       annotations = if (hasAnnotations) annotationSpecs() else emptyList(),
@@ -568,7 +569,7 @@ public class ElementsClassInspector private constructor(
       isSynthetic = false,
       jvmModifiers = jvmInformationMethod.jvmModifiers(),
       isOverride = knownIsOverride ?: isOverriddenIn(typeElement),
-      exceptions = exceptionTypeNames()
+      exceptions = exceptionTypeNames(),
     )
   }
 

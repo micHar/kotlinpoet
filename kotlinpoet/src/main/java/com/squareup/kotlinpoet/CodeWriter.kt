@@ -16,6 +16,7 @@
 package com.squareup.kotlinpoet
 
 import java.io.Closeable
+import kotlin.math.min
 
 /** Sentinel value that indicates that no user-provided package has been set.  */
 private val NO_PACKAGE = String()
@@ -42,7 +43,7 @@ internal inline fun buildCodeString(builderAction: CodeWriter.() -> Unit): Strin
 
 internal fun buildCodeString(
   codeWriter: CodeWriter,
-  builderAction: CodeWriter.() -> Unit
+  builderAction: CodeWriter.() -> Unit,
 ): String {
   val stringBuilder = StringBuilder()
   codeWriter.emitInto(stringBuilder, builderAction)
@@ -56,10 +57,10 @@ internal fun buildCodeString(
 internal class CodeWriter constructor(
   out: Appendable,
   private val indent: String = DEFAULT_INDENT,
-  private val memberImports: Map<String, Import> = emptyMap(),
-  val importedTypes: Map<String, ClassName> = emptyMap(),
-  val importedMembers: Map<String, MemberName> = emptyMap(),
-  columnLimit: Int = 100
+  imports: Map<String, Import> = emptyMap(),
+  private val importedTypes: Map<String, ClassName> = emptyMap(),
+  private val importedMembers: Map<String, MemberName> = emptyMap(),
+  columnLimit: Int = 100,
 ) : Closeable {
   private var out = LineWrapper(out, indent, columnLimit)
   private var indentLevel = 0
@@ -69,10 +70,19 @@ internal class CodeWriter constructor(
   private var packageName = NO_PACKAGE
   private val typeSpecStack = mutableListOf<TypeSpec>()
   private val memberImportNames = mutableSetOf<String>()
-  private val importableTypes = mutableMapOf<String, ClassName>()
-  private val importableMembers = mutableMapOf<String, MemberName>()
+  private val importableTypes = mutableMapOf<String, List<ClassName>>().withDefault { emptyList() }
+  private val importableMembers = mutableMapOf<String, List<MemberName>>().withDefault { emptyList() }
   private val referencedNames = mutableSetOf<String>()
   private var trailingNewline = false
+
+  val imports = imports.also {
+    for ((memberName, _) in imports) {
+      val lastDotIndex = memberName.lastIndexOf('.')
+      if (lastDotIndex >= 0) {
+        memberImportNames.add(memberName.substring(0, lastDotIndex))
+      }
+    }
+  }
 
   /**
    * When emitting a statement, this is the line of the statement currently being written. The first
@@ -80,15 +90,6 @@ internal class CodeWriter constructor(
    * is -1 when the currently-written line isn't part of a statement.
    */
   var statementLine = -1
-
-  init {
-    for ((memberName, _) in memberImports) {
-      val lastDotIndex = memberName.lastIndexOf('.')
-      if (lastDotIndex >= 0) {
-        memberImportNames.add(memberName.substring(0, lastDotIndex))
-      }
-    }
-  }
 
   fun indent(levels: Int = 1) = apply {
     indentLevel += levels
@@ -154,14 +155,18 @@ internal class CodeWriter constructor(
    */
   fun emitModifiers(
     modifiers: Set<KModifier>,
-    implicitModifiers: Set<KModifier> = emptySet()
+    implicitModifiers: Set<KModifier> = emptySet(),
   ) {
     if (shouldEmitPublicModifier(modifiers, implicitModifiers)) {
       emit(KModifier.PUBLIC.keyword)
       emit(" ")
     }
-    for (modifier in modifiers.toEnumSet()) {
-      if (modifier in implicitModifiers) continue
+    val uniqueNonPublicExplicitOnlyModifiers =
+      modifiers
+        .filterNot { it == KModifier.PUBLIC }
+        .filterNot { implicitModifiers.contains(it) }
+        .toEnumSet()
+    for (modifier in uniqueNonPublicExplicitOnlyModifiers) {
       emit(modifier.keyword)
       emit(" ")
     }
@@ -232,7 +237,7 @@ internal class CodeWriter constructor(
   fun emitCode(
     codeBlock: CodeBlock,
     isConstantContext: Boolean = false,
-    ensureTrailingNewline: Boolean = false
+    ensureTrailingNewline: Boolean = false,
   ) = apply {
     var a = 0
     var deferredTypeName: ClassName? = null // used by "import static" logic
@@ -249,8 +254,8 @@ internal class CodeWriter constructor(
           val literal = if (string != null) {
             stringLiteralWithQuotes(
               string,
-              escapeDollarSign = true,
-              isConstantContext = isConstantContext
+              isInsideRawString = false,
+              isConstantContext = isConstantContext,
             )
           } else {
             "null"
@@ -270,8 +275,8 @@ internal class CodeWriter constructor(
           val literal = if (string != null) {
             stringLiteralWithQuotes(
               string,
-              escapeDollarSign = false,
-              isConstantContext = isConstantContext
+              isInsideRawString = true,
+              isConstantContext = isConstantContext,
             )
           } else {
             "null"
@@ -375,7 +380,7 @@ internal class CodeWriter constructor(
     if (partWithoutLeadingDot.isEmpty()) return false
     val first = partWithoutLeadingDot[0]
     if (!Character.isJavaIdentifierStart(first)) return false
-    val explicit = memberImports[canonical + "." + extractMemberName(partWithoutLeadingDot)]
+    val explicit = imports[canonical + "." + extractMemberName(partWithoutLeadingDot)]
     if (explicit != null) {
       if (explicit.alias != null) {
         val memberName = extractMemberName(partWithoutLeadingDot)
@@ -397,7 +402,7 @@ internal class CodeWriter constructor(
         codeWriter = this,
         enclosingName = null,
         implicitModifiers = setOf(KModifier.PUBLIC),
-        includeKdocTags = true
+        includeKdocTags = true,
       )
       is TypeAliasSpec -> o.emit(this)
       is CodeBlock -> emitCode(o, isConstantContext = isConstantContext)
@@ -416,20 +421,21 @@ internal class CodeWriter constructor(
     var nameResolved = false
     var c: ClassName? = className
     while (c != null) {
-      val alias = memberImports[c.canonicalName]?.alias
+      val alias = imports[c.canonicalName]?.alias
       val simpleName = alias ?: c.simpleName
       val resolved = resolve(simpleName)
       nameResolved = resolved != null
 
       // We don't care about nullability and type annotations here, as it's irrelevant for imports.
       if (resolved == c.copy(nullable = false, annotations = emptyList())) {
-        if (alias != null) return alias
-        val suffixOffset = c.simpleNames.size - 1
-        referencedNames.add(className.topLevelClassName().simpleName)
-        return className.simpleNames.subList(
-          suffixOffset,
-          className.simpleNames.size
+        if (alias == null) {
+          referencedNames.add(className.topLevelClassName().simpleName)
+        }
+        val nestedClassNames = className.simpleNames.subList(
+          c.simpleNames.size,
+          className.simpleNames.size,
         ).joinToString(".")
+        return "$simpleName.$nestedClassNames"
       }
       c = c.enclosingClassName()
     }
@@ -454,7 +460,7 @@ internal class CodeWriter constructor(
   }
 
   fun lookupName(memberName: MemberName): String {
-    val simpleName = memberImports[memberName.canonicalName]?.alias ?: memberName.simpleName
+    val simpleName = imports[memberName.canonicalName]?.alias ?: memberName.simpleName
     // Match an imported member.
     val importedMember = importedMembers[simpleName]
     if (importedMember == memberName) {
@@ -474,9 +480,9 @@ internal class CodeWriter constructor(
     // Mark the member as importable for a future pass unless the name clashes with
     // a method in the current context
     if (!kdoc && (
-      memberName.isExtension ||
-        !isMethodNameUsedInCurrentContext(memberName.simpleName)
-      )
+        memberName.isExtension ||
+          !isMethodNameUsedInCurrentContext(memberName.simpleName)
+        )
     ) {
       importableMember(memberName)
     }
@@ -487,34 +493,31 @@ internal class CodeWriter constructor(
   // TODO(luqasn): also honor superclass members when resolving names.
   private fun isMethodNameUsedInCurrentContext(simpleName: String): Boolean {
     for (it in typeSpecStack.reversed()) {
-      if (it.funSpecs.any { it.name == simpleName })
+      if (it.funSpecs.any { it.name == simpleName }) {
         return true
-      if (!it.modifiers.contains(KModifier.INNER))
+      }
+      if (!it.modifiers.contains(KModifier.INNER)) {
         break
+      }
     }
     return false
   }
 
   private fun importableType(className: ClassName) {
     val topLevelClassName = className.topLevelClassName()
-    val simpleName = memberImports[className.canonicalName]?.alias ?: topLevelClassName.simpleName
+    val simpleName = imports[className.canonicalName]?.alias ?: topLevelClassName.simpleName
     // Check for name clashes with members.
     if (simpleName !in importableMembers) {
-      importableTypes.putIfAbsent(simpleName, topLevelClassName)
+      importableTypes[simpleName] = importableTypes.getValue(simpleName) + topLevelClassName
     }
   }
 
   private fun importableMember(memberName: MemberName) {
     if (memberName.packageName.isNotEmpty()) {
-      val simpleName = memberImports[memberName.canonicalName]?.alias ?: memberName.simpleName
+      val simpleName = imports[memberName.canonicalName]?.alias ?: memberName.simpleName
       // Check for name clashes with types.
       if (simpleName !in importableTypes) {
-        val namesake = importableMembers.putIfAbsent(simpleName, memberName)
-        if (namesake != null && memberName.enclosingClassName != null) {
-          // If there's a name clash and member has an enclosing class, we can mark it as importable
-          // and use its resolved name later instead of the FQ member name.
-          importableType(memberName.enclosingClassName)
-        }
+        importableMembers[simpleName] = importableMembers.getValue(simpleName) + memberName
       }
     }
   }
@@ -606,7 +609,7 @@ internal class CodeWriter constructor(
         out.append(
           line,
           indentLevel = if (kdoc) indentLevel else indentLevel + 2,
-          linePrefix = if (kdoc) " * " else ""
+          linePrefix = if (kdoc) " * " else "",
         )
       }
       trailingNewline = false
@@ -622,42 +625,48 @@ internal class CodeWriter constructor(
   /**
    * Returns whether a [KModifier.PUBLIC] should be emitted.
    *
-   * This will return true when [KModifier.PUBLIC] is one of the [implicitModifiers] and
-   * there are no other opposing modifiers (like [KModifier.PROTECTED] etc.) supplied by the
-   * consumer.
+   * If [modifiers] contains [KModifier.PUBLIC], this method always returns `true`.
+   *
+   * Otherwise, this will return `true` when [KModifier.PUBLIC] is one of the [implicitModifiers]
+   * and there are no other opposing modifiers (like [KModifier.PROTECTED] etc.) supplied by the
+   * consumer in [modifiers].
    */
   private fun shouldEmitPublicModifier(
     modifiers: Set<KModifier>,
-    implicitModifiers: Set<KModifier>
+    implicitModifiers: Set<KModifier>,
   ): Boolean {
     if (modifiers.contains(KModifier.PUBLIC)) {
       return true
+    }
+
+    if (implicitModifiers.contains(KModifier.PUBLIC) && modifiers.contains(KModifier.OVERRIDE)) {
+      return false
     }
 
     if (!implicitModifiers.contains(KModifier.PUBLIC)) {
       return false
     }
 
-    val containsOtherVisibility =
+    val hasOtherConsumerSpecifiedVisibility =
       modifiers.containsAnyOf(KModifier.PRIVATE, KModifier.INTERNAL, KModifier.PROTECTED)
 
-    return !containsOtherVisibility
+    return !hasOtherConsumerSpecifiedVisibility
   }
 
   /**
    * Returns the types that should have been imported for this code. If there were any simple name
-   * collisions, that type's first use is imported.
+   * collisions, import aliases will be generated.
    */
-  fun suggestedTypeImports(): Map<String, ClassName> {
-    return importableTypes.filterKeys { it !in referencedNames }
+  private fun suggestedTypeImports(): Map<String, Set<ClassName>> {
+    return importableTypes.filterKeys { it !in referencedNames }.mapValues { it.value.toSet() }
   }
 
   /**
    * Returns the members that should have been imported for this code. If there were any simple name
-   * collisions, that member's first use is imported.
+   * collisions, import aliases will be generated.
    */
-  fun suggestedMemberImports(): Map<String, MemberName> {
-    return importableMembers.filterKeys { it !in referencedNames }
+  private fun suggestedMemberImports(): Map<String, Set<MemberName>> {
+    return importableMembers.filterKeys { it !in referencedNames }.mapValues { it.value.toSet() }
   }
 
   /**
@@ -676,5 +685,99 @@ internal class CodeWriter constructor(
 
   override fun close() {
     out.close()
+  }
+
+  companion object {
+    /**
+     * Makes a pass to collect imports by executing [emitStep], and returns an instance of
+     * [CodeWriter] pre-initialized with collected imports.
+     */
+    fun withCollectedImports(
+      out: Appendable,
+      indent: String,
+      memberImports: Map<String, Import>,
+      emitStep: (importsCollector: CodeWriter) -> Unit,
+    ): CodeWriter {
+      // First pass: emit the entire class, just to collect the types we'll need to import.
+      val importsCollector = CodeWriter(
+        NullAppendable,
+        indent,
+        memberImports,
+        columnLimit = Integer.MAX_VALUE,
+      )
+      emitStep(importsCollector)
+      val generatedImports = mutableMapOf<String, Import>()
+      val suggestedTypeImports = importsCollector.suggestedTypeImports()
+        .generateImports(
+          generatedImports,
+          canonicalName = ClassName::canonicalName,
+          capitalizeAliases = true,
+        )
+      val suggestedMemberImports = importsCollector.suggestedMemberImports()
+        .generateImports(
+          generatedImports,
+          canonicalName = MemberName::canonicalName,
+          capitalizeAliases = false,
+        )
+      importsCollector.close()
+
+      return CodeWriter(
+        out,
+        indent,
+        memberImports + generatedImports.filterKeys { it !in memberImports },
+        suggestedTypeImports,
+        suggestedMemberImports,
+      )
+    }
+
+    private fun <T> Map<String, Set<T>>.generateImports(
+      generatedImports: MutableMap<String, Import>,
+      canonicalName: T.() -> String,
+      capitalizeAliases: Boolean,
+    ): Map<String, T> {
+      return flatMap { (simpleName, qualifiedNames) ->
+        if (qualifiedNames.size == 1) {
+          listOf(simpleName to qualifiedNames.first()).also {
+            val canonicalName = qualifiedNames.first().canonicalName()
+            generatedImports[canonicalName] = Import(canonicalName)
+          }
+        } else {
+          generateImportAliases(simpleName, qualifiedNames, canonicalName, capitalizeAliases)
+            .onEach { (alias, qualifiedName) ->
+              val canonicalName = qualifiedName.canonicalName()
+              generatedImports[canonicalName] = Import(canonicalName, alias)
+            }
+        }
+      }.toMap()
+    }
+
+    private fun <T> generateImportAliases(
+      simpleName: String,
+      qualifiedNames: Set<T>,
+      canonicalName: T.() -> String,
+      capitalizeAliases: Boolean,
+    ): List<Pair<String, T>> {
+      val canonicalNameSegments = qualifiedNames.associateWith { qualifiedName ->
+        qualifiedName.canonicalName().split('.')
+          .dropLast(1) // Last segment of the canonical name is the simple name, drop it to avoid repetition.
+          .filter { it != "Companion" }
+          .map { it.replaceFirstChar(Char::uppercaseChar) }
+      }
+      val aliasNames = mutableMapOf<String, T>()
+      var segmentsToUse = 0
+      // Iterate until we have unique aliases for all names.
+      while (aliasNames.size != qualifiedNames.size) {
+        segmentsToUse += 1
+        aliasNames.clear()
+        for ((qualifiedName, segments) in canonicalNameSegments) {
+          val aliasPrefix = segments.takeLast(min(segmentsToUse, segments.size))
+            .joinToString(separator = "")
+            .replaceFirstChar { if (!capitalizeAliases) it.lowercaseChar() else it }
+          val aliasName = aliasPrefix + simpleName.replaceFirstChar(Char::uppercaseChar)
+          aliasNames[aliasName] = qualifiedName
+        }
+      }
+      return aliasNames.toList()
+    }
   }
 }

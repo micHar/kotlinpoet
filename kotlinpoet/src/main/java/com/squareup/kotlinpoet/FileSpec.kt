@@ -45,9 +45,9 @@ import kotlin.reflect.KClass
  */
 public class FileSpec private constructor(
   builder: Builder,
-  private val tagMap: TagMap = builder.buildTagMap()
-) : Taggable by tagMap {
-  public val annotations: List<AnnotationSpec> = builder.annotations.toImmutableList()
+  private val tagMap: TagMap = builder.buildTagMap(),
+) : Taggable by tagMap, Annotatable {
+  override val annotations: List<AnnotationSpec> = builder.annotations.toImmutableList()
   public val comment: CodeBlock = builder.comment.build()
   public val packageName: String = builder.packageName
   public val name: String = builder.name
@@ -61,20 +61,11 @@ public class FileSpec private constructor(
 
   @Throws(IOException::class)
   public fun writeTo(out: Appendable) {
-    // First pass: emit the entire class, just to collect the types we'll need to import.
-    val importsCollector = CodeWriter(
-      NullAppendable, indent, memberImports,
-      columnLimit = Integer.MAX_VALUE
-    )
-    emit(importsCollector, collectingImports = true)
-    val suggestedTypeImports = importsCollector.suggestedTypeImports()
-    val suggestedMemberImports = importsCollector.suggestedMemberImports()
-    importsCollector.close()
-
-    // Second pass: write the code, taking advantage of the imports.
-    val codeWriter = CodeWriter(
-      out, indent, memberImports, suggestedTypeImports,
-      suggestedMemberImports
+    val codeWriter = CodeWriter.withCollectedImports(
+      out = out,
+      indent = indent,
+      memberImports = memberImports,
+      emitStep = { importsCollector -> emit(importsCollector, collectingImports = true) },
     )
     emit(codeWriter, collectingImports = false)
     codeWriter.close()
@@ -114,7 +105,7 @@ public class FileSpec private constructor(
       StandardLocation.SOURCE_OUTPUT,
       packageName,
       "$name.$extension",
-      *originatingElements.toTypedArray()
+      *originatingElements.toTypedArray(),
     )
     try {
       filerSourceFile.openWriter().use { writer -> writeTo(writer) }
@@ -146,9 +137,6 @@ public class FileSpec private constructor(
       codeWriter.emit("\n")
     }
 
-    val importedTypeNames = codeWriter.importedTypes.values.map { it.canonicalName }
-    val importedMemberNames = codeWriter.importedMembers.values.map { it.canonicalName }
-
     // If we don't have default imports or are collecting them, we don't need to filter
     var isDefaultImport: (String) -> Boolean = { false }
     if (!collectingImports && defaultImports.isNotEmpty()) {
@@ -158,12 +146,9 @@ public class FileSpec private constructor(
       }
     }
     // Aliased imports should always appear at the bottom of the imports list.
-    val (aliasedImports, nonAliasedImports) = memberImports.values.partition { it.alias != null }
-    val imports = (importedTypeNames + importedMemberNames)
-      .asSequence()
-      .filterNot { it in memberImports.keys }
-      .map { it.escapeSegmentsIfNecessary() }
-      .plus(nonAliasedImports.asSequence().map { it.toString() })
+    val (aliasedImports, nonAliasedImports) = codeWriter.imports.values
+      .partition { it.alias != null }
+    val imports = nonAliasedImports.asSequence().map { it.toString() }
       .filterNot(isDefaultImport)
       .toSortedSet()
       .plus(aliasedImports.map { it.toString() }.toSortedSet())
@@ -207,11 +192,11 @@ public class FileSpec private constructor(
 
   public fun toJavaFileObject(): JavaFileObject {
     val uri = URI.create(
-      (
-        if (packageName.isEmpty())
-          name else
-          packageName.replace('.', '/') + '/' + name
-        ) + ".$extension"
+      if (packageName.isEmpty()) {
+        name
+      } else {
+        packageName.replace('.', '/') + '/' + name
+      } + ".$extension",
     )
     return object : SimpleJavaFileObject(uri, Kind.SOURCE) {
       private val lastModified = System.currentTimeMillis()
@@ -245,7 +230,8 @@ public class FileSpec private constructor(
     public val packageName: String,
     public val name: String,
     public val isScript: Boolean,
-  ) : Taggable.Builder<Builder> {
+  ) : Taggable.Builder<Builder>, Annotatable.Builder<Builder> {
+    override val annotations: MutableList<AnnotationSpec> = mutableListOf()
     internal val comment = CodeBlock.builder()
     internal val memberImports = sortedSetOf<Import>()
     internal var indent = DEFAULT_INDENT
@@ -254,7 +240,6 @@ public class FileSpec private constructor(
     public val defaultImports: MutableSet<String> = mutableSetOf()
     public val imports: List<Import> get() = memberImports.toList()
     public val members: MutableList<Any> = mutableListOf()
-    public val annotations: MutableList<AnnotationSpec> = mutableListOf()
     internal val body = CodeBlock.builder()
 
     /**
@@ -263,25 +248,16 @@ public class FileSpec private constructor(
      * The annotation must either have a [`file` use-site target][AnnotationSpec.UseSiteTarget.FILE]
      * or not have a use-site target specified (in which case it will be changed to `file`).
      */
-    public fun addAnnotation(annotationSpec: AnnotationSpec): Builder = apply {
+    override fun addAnnotation(annotationSpec: AnnotationSpec): Builder = apply {
       val spec = when (annotationSpec.useSiteTarget) {
         FILE -> annotationSpec
         null -> annotationSpec.toBuilder().useSiteTarget(FILE).build()
         else -> error(
-          "Use-site target ${annotationSpec.useSiteTarget} not supported for file annotations."
+          "Use-site target ${annotationSpec.useSiteTarget} not supported for file annotations.",
         )
       }
       annotations += spec
     }
-
-    public fun addAnnotation(annotation: ClassName): Builder =
-      addAnnotation(AnnotationSpec.builder(annotation).build())
-
-    public fun addAnnotation(annotation: Class<*>): Builder =
-      addAnnotation(annotation.asClassName())
-
-    public fun addAnnotation(annotation: KClass<*>): Builder =
-      addAnnotation(annotation.asClassName())
 
     /** Adds a file-site comment. This is prefixed to the start of the file and different from [addBodyComment]. */
     public fun addFileComment(format: String, vararg args: Any): Builder = apply {
@@ -291,7 +267,7 @@ public class FileSpec private constructor(
     @Deprecated(
       "Use addFileComment() instead.",
       ReplaceWith("addFileComment(format, args)"),
-      DeprecationLevel.ERROR
+      DeprecationLevel.ERROR,
     )
     public fun addComment(format: String, vararg args: Any): Builder = addFileComment(format, *args)
 
@@ -335,7 +311,8 @@ public class FileSpec private constructor(
     }
 
     public fun addImport(constant: Enum<*>): Builder = addImport(
-      (constant as java.lang.Enum<*>).declaringClass.asClassName(), constant.name
+      (constant as java.lang.Enum<*>).declaringClass.asClassName(),
+      constant.name,
     )
 
     public fun addImport(`class`: Class<*>, vararg names: String): Builder = apply {
@@ -403,7 +380,7 @@ public class FileSpec private constructor(
     public fun addAliasedImport(
       className: ClassName,
       memberName: String,
-      `as`: String
+      `as`: String,
     ): Builder = apply {
       memberImports += Import("${className.canonicalName}.$memberName", `as`)
     }
@@ -428,7 +405,7 @@ public class FileSpec private constructor(
      */
     public fun addKotlinDefaultImports(
       includeJvm: Boolean = true,
-      includeJs: Boolean = true
+      includeJs: Boolean = true,
     ): Builder = apply {
       defaultImports += KOTLIN_DEFAULT_IMPORTS
       if (includeJvm) {
@@ -515,11 +492,29 @@ public class FileSpec private constructor(
       body.clear()
     }
 
+    //region Overrides for binary compatibility
+    @Suppress("RedundantOverride")
+    override fun addAnnotations(annotationSpecs: Iterable<AnnotationSpec>): Builder =
+      super.addAnnotations(annotationSpecs)
+
+    @Suppress("RedundantOverride")
+    override fun addAnnotation(annotation: ClassName): Builder = super.addAnnotation(annotation)
+
+    @DelicateKotlinPoetApi(
+      message = "Java reflection APIs don't give complete information on Kotlin types. Consider " +
+        "using the kotlinpoet-metadata APIs instead.",
+    )
+    override fun addAnnotation(annotation: Class<*>): Builder = super.addAnnotation(annotation)
+
+    @Suppress("RedundantOverride")
+    override fun addAnnotation(annotation: KClass<*>): Builder = super.addAnnotation(annotation)
+    //endregion
+
     public fun build(): FileSpec {
       for (annotationSpec in annotations) {
         if (annotationSpec.useSiteTarget != FILE) {
           error(
-            "Use-site target ${annotationSpec.useSiteTarget} not supported for file annotations."
+            "Use-site target ${annotationSpec.useSiteTarget} not supported for file annotations.",
           )
         }
       }
@@ -532,6 +527,17 @@ public class FileSpec private constructor(
       val fileName = typeSpec.name
         ?: throw IllegalArgumentException("file name required but type has no name")
       return builder(packageName, fileName).addType(typeSpec).build()
+    }
+
+    @JvmStatic public fun builder(className: ClassName): Builder {
+      require(className.simpleNames.size == 1) {
+        "nested types can't be used to name a file: ${className.simpleNames.joinToString(".")}"
+      }
+      return builder(className.packageName, className.simpleName)
+    }
+
+    @JvmStatic public fun builder(memberName: MemberName): Builder {
+      return builder(memberName.packageName, memberName.simpleName)
     }
 
     @JvmStatic public fun builder(packageName: String, fileName: String): Builder =

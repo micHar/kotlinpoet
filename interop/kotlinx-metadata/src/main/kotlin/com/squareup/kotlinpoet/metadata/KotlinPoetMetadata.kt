@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 @file:JvmName("KotlinPoetMetadata")
-@file:Suppress("unused")
 
 package com.squareup.kotlinpoet.metadata
 
-import kotlinx.metadata.KmClass
-import kotlinx.metadata.jvm.KotlinClassHeader
-import kotlinx.metadata.jvm.KotlinClassMetadata
 import javax.lang.model.element.TypeElement
 import kotlin.annotation.AnnotationTarget.CLASS
 import kotlin.annotation.AnnotationTarget.FUNCTION
 import kotlin.annotation.AnnotationTarget.PROPERTY
 import kotlin.reflect.KClass
+import kotlinx.metadata.KmClass
+import kotlinx.metadata.jvm.KotlinClassMetadata
+import kotlinx.metadata.jvm.Metadata
 
 /**
  * Indicates that a given API is part of the experimental KotlinPoet metadata support. This exists
@@ -99,14 +98,14 @@ private inline fun readMetadata(lookup: ((Class<Metadata>) -> Metadata?)): Metad
   }
 }
 
-private fun Metadata.asClassHeader(): KotlinClassHeader {
-  return KotlinClassHeader(
+private fun Metadata.asClassHeader(): Metadata {
+  return Metadata(
     kind = kind,
     metadataVersion = metadataVersion,
     data1 = data1,
     data2 = data2,
     extraString = extraString,
     packageName = packageName,
-    extraInt = extraInt
+    extraInt = extraInt,
   )
 }

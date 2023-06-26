@@ -27,12 +27,12 @@ class FacadeFileTest : MultiClassInspectorTest() {
 
   @IgnoreForHandlerType(
     handlerType = ELEMENTS,
-    reason = "Elements can detect JvmOverloads, JvmName not possible in reflection"
+    reason = "Elements can detect JvmOverloads, JvmName not possible in reflection",
   )
   @Test
   fun facadeFile_reflective() {
     val fileSpec = Class.forName(
-      "com.squareup.kotlinpoet.metadata.specs.FacadeFile"
+      "com.squareup.kotlinpoet.metadata.specs.FacadeFile",
     ).kotlin.toFileSpecWithTestHandler()
     assertThat(fileSpec.name).isEqualTo("FacadeFile")
     //language=kotlin
@@ -50,7 +50,6 @@ class FacadeFileTest : MultiClassInspectorTest() {
       import kotlin.Int
       import kotlin.Long
       import kotlin.String
-      import kotlin.Unit
       import kotlin.collections.List
       import kotlin.jvm.JvmField
       import kotlin.jvm.JvmName
@@ -58,21 +57,21 @@ class FacadeFileTest : MultiClassInspectorTest() {
       import kotlin.jvm.Synchronized
 
       @JvmName(name = "jvmStaticFunction")
-      public fun jvmNameFunction(): Unit {
+      public fun jvmNameFunction() {
       }
 
       public fun jvmOverloads(
         param1: String,
         optionalParam2: String = throw NotImplementedError("Stub!"),
         nullableParam3: String? = throw NotImplementedError("Stub!"),
-      ): Unit {
+      ) {
       }
 
-      public fun regularFun(): Unit {
+      public fun regularFun() {
       }
 
       @Synchronized
-      public fun synchronizedFun(): Unit {
+      public fun synchronizedFun() {
       }
 
       public val BINARY_PROP: Int = 11
@@ -95,9 +94,9 @@ class FacadeFileTest : MultiClassInspectorTest() {
 
       public const val CONST_STRING_PROP: String = "prop"
 
-      public const val CONST_UNDERSCORES_HEX_PROP: Long = 4293713502L
+      public const val CONST_UNDERSCORES_HEX_PROP: Long = 4_293_713_502L
 
-      public const val CONST_UNDERSCORES_PROP: Int = 1000000
+      public const val CONST_UNDERSCORES_PROP: Int = 1_000_000
 
       public val DOUBLE_PROP: Double = 1.0
 
@@ -111,9 +110,9 @@ class FacadeFileTest : MultiClassInspectorTest() {
 
       public val STRING_PROP: String = "prop"
 
-      public val UNDERSCORES_HEX_PROP: Long = 4293713502L
+      public val UNDERSCORES_HEX_PROP: Long = 4_293_713_502L
 
-      public val UNDERSCORES_PROP: Int = 1000000
+      public val UNDERSCORES_PROP: Int = 1_000_000
 
       public var VAR_BINARY_PROP: Int = throw NotImplementedError("Stub!")
 
@@ -157,18 +156,18 @@ class FacadeFileTest : MultiClassInspectorTest() {
       public typealias FacadeNestedTypeAlias = List<GenericTypeAlias>
 
       public typealias FacadeTypeAliasName = String
-      """.trimIndent()
+      """.trimIndent(),
     )
   }
 
   @IgnoreForHandlerType(
     handlerType = REFLECTIVE,
-    reason = "Elements can detect JvmOverloads, JvmName not possible in reflection"
+    reason = "Elements can detect JvmOverloads, JvmName not possible in reflection",
   )
   @Test
   fun facadeFile_elements() {
     val fileSpec = Class.forName(
-      "com.squareup.kotlinpoet.metadata.specs.FacadeFile"
+      "com.squareup.kotlinpoet.metadata.specs.FacadeFile",
     ).kotlin.toFileSpecWithTestHandler()
     assertThat(fileSpec.name).isEqualTo("FacadeFile")
     //language=kotlin
@@ -186,7 +185,6 @@ class FacadeFileTest : MultiClassInspectorTest() {
       import kotlin.Int
       import kotlin.Long
       import kotlin.String
-      import kotlin.Unit
       import kotlin.collections.List
       import kotlin.jvm.JvmName
       import kotlin.jvm.JvmOverloads
@@ -194,7 +192,7 @@ class FacadeFileTest : MultiClassInspectorTest() {
       import kotlin.jvm.Synchronized
 
       @JvmName(name = "jvmStaticFunction")
-      public fun jvmNameFunction(): Unit {
+      public fun jvmNameFunction() {
       }
 
       @JvmOverloads
@@ -202,14 +200,14 @@ class FacadeFileTest : MultiClassInspectorTest() {
         param1: String,
         optionalParam2: String = throw NotImplementedError("Stub!"),
         nullableParam3: String? = throw NotImplementedError("Stub!"),
-      ): Unit {
+      ) {
       }
 
-      public fun regularFun(): Unit {
+      public fun regularFun() {
       }
 
       @Synchronized
-      public fun synchronizedFun(): Unit {
+      public fun synchronizedFun() {
       }
 
       public val BINARY_PROP: Int = throw NotImplementedError("Stub!")
@@ -232,9 +230,9 @@ class FacadeFileTest : MultiClassInspectorTest() {
 
       public const val CONST_STRING_PROP: String = "prop"
 
-      public const val CONST_UNDERSCORES_HEX_PROP: Long = 4293713502L
+      public const val CONST_UNDERSCORES_HEX_PROP: Long = 4_293_713_502L
 
-      public const val CONST_UNDERSCORES_PROP: Int = 1000000
+      public const val CONST_UNDERSCORES_PROP: Int = 1_000_000
 
       public val DOUBLE_PROP: Double = throw NotImplementedError("Stub!")
 
@@ -293,18 +291,18 @@ class FacadeFileTest : MultiClassInspectorTest() {
       public typealias FacadeNestedTypeAlias = List<GenericTypeAlias>
 
       public typealias FacadeTypeAliasName = String
-      """.trimIndent()
+      """.trimIndent(),
     )
   }
 
   @IgnoreForHandlerType(
     handlerType = ELEMENTS,
-    reason = "JvmName not possible in reflection"
+    reason = "JvmName not possible in reflection",
   )
   @Test
   fun noJvmName_reflective() {
     val fileSpec = Class.forName(
-      "com.squareup.kotlinpoet.metadata.specs.NoJvmNameFacadeFileKt"
+      "com.squareup.kotlinpoet.metadata.specs.NoJvmNameFacadeFileKt",
     ).kotlin.toFileSpecWithTestHandler()
     assertThat(fileSpec.name).isEqualTo("NoJvmNameFacadeFile")
     //language=kotlin
@@ -315,18 +313,18 @@ class FacadeFileTest : MultiClassInspectorTest() {
       import kotlin.String
 
       public val prop: String = ""
-      """.trimIndent()
+      """.trimIndent(),
     )
   }
 
   @IgnoreForHandlerType(
     handlerType = REFLECTIVE,
-    reason = "JvmName not possible in reflection"
+    reason = "JvmName not possible in reflection",
   )
   @Test
   fun noJvmName_elements() {
     val fileSpec = Class.forName(
-      "com.squareup.kotlinpoet.metadata.specs.NoJvmNameFacadeFileKt"
+      "com.squareup.kotlinpoet.metadata.specs.NoJvmNameFacadeFileKt",
     ).kotlin.toFileSpecWithTestHandler()
     assertThat(fileSpec.name).isEqualTo("NoJvmNameFacadeFile")
     //language=kotlin
@@ -337,18 +335,18 @@ class FacadeFileTest : MultiClassInspectorTest() {
       import kotlin.String
 
       public val prop: String = throw NotImplementedError("Stub!")
-      """.trimIndent()
+      """.trimIndent(),
     )
   }
 
   @IgnoreForHandlerType(
     handlerType = ELEMENTS,
-    reason = "JvmName not possible in reflection"
+    reason = "JvmName not possible in reflection",
   )
   @Test
   fun jvmName_with_kt_reflective() {
     val fileSpec = Class.forName(
-      "com.squareup.kotlinpoet.metadata.specs.JvmNameKt"
+      "com.squareup.kotlinpoet.metadata.specs.JvmNameKt",
     ).kotlin.toFileSpecWithTestHandler()
     assertThat(fileSpec.name).isEqualTo("JvmName")
     //language=kotlin
@@ -359,18 +357,18 @@ class FacadeFileTest : MultiClassInspectorTest() {
       import kotlin.String
 
       public val prop2: String = ""
-      """.trimIndent()
+      """.trimIndent(),
     )
   }
 
   @IgnoreForHandlerType(
     handlerType = REFLECTIVE,
-    reason = "JvmName not possible in reflection"
+    reason = "JvmName not possible in reflection",
   )
   @Test
   fun jvmName_with_kt_elements() {
     val fileSpec = Class.forName(
-      "com.squareup.kotlinpoet.metadata.specs.JvmNameKt"
+      "com.squareup.kotlinpoet.metadata.specs.JvmNameKt",
     ).kotlin.toFileSpecWithTestHandler()
     assertThat(fileSpec.name).isEqualTo("JvmName")
     //language=kotlin
@@ -384,7 +382,7 @@ class FacadeFileTest : MultiClassInspectorTest() {
       import kotlin.jvm.JvmName
 
       public val prop2: String = throw NotImplementedError("Stub!")
-      """.trimIndent()
+      """.trimIndent(),
     )
   }
 }

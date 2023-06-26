@@ -22,8 +22,8 @@ import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeArgument
 import com.google.devtools.ksp.symbol.Nullability
 import com.squareup.kotlinpoet.ksp.toTypeName
-import org.junit.Test
 import kotlin.test.assertFailsWith
+import org.junit.Test
 
 class KsTypesTest {
   // Regression test for https://github.com/square/kotlinpoet/issues/1178
@@ -36,7 +36,7 @@ class KsTypesTest {
       override val annotations: Sequence<KSAnnotation>
         get() = throw NotImplementedError()
       override val arguments: List<KSTypeArgument>
-        get() = throw NotImplementedError()
+        get() = emptyList()
       override val declaration: KSDeclaration
         get() = throw NotImplementedError()
       override val isFunctionType: Boolean

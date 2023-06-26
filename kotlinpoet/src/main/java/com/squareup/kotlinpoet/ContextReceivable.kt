@@ -23,6 +23,7 @@ public interface ContextReceivable {
   public val contextReceiverTypes: List<TypeName>
 
   /** The builder analogue to [ContextReceivable] types. */
+  @JvmDefaultWithCompatibility
   public interface Builder<out T : Builder<T>> {
 
     /** Mutable map of the current originating elements this builder contains. */
@@ -50,5 +51,5 @@ internal fun ContextReceivable.Builder<*>.buildContextReceivers() =
 @JvmInline
 @ExperimentalKotlinPoetApi
 internal value class ContextReceivers(
-  override val contextReceiverTypes: List<TypeName>
+  override val contextReceiverTypes: List<TypeName>,
 ) : ContextReceivable

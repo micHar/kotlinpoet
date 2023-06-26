@@ -18,6 +18,8 @@
 package com.squareup.kotlinpoet
 
 import java.lang.reflect.Type
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
 import javax.lang.model.element.Element
 import javax.lang.model.type.TypeMirror
 import kotlin.reflect.KClass
@@ -58,7 +60,7 @@ import kotlin.reflect.KClass
  */
 public class CodeBlock private constructor(
   internal val formatParts: List<String>,
-  internal val args: List<Any?>
+  internal val args: List<Any?>,
 ) {
   /** A heterogeneous list containing string literals and value placeholders.  */
 
@@ -310,7 +312,7 @@ public class CodeBlock private constructor(
         require(index >= 0 && index < args.size) {
           "index ${index + 1} for '${format.substring(
             indexStart - 1,
-            indexEnd + 1
+            indexEnd + 1,
           )}' not in range (received ${args.size} arguments)"
         }
         require(!hasIndexed || !hasRelative) { "cannot mix indexed and positional parameters" }
@@ -346,7 +348,7 @@ public class CodeBlock private constructor(
         'T' -> this.args += argToType(arg)
         'M' -> this.args += arg
         else -> throw IllegalArgumentException(
-          String.format("invalid format string: '%s'", format)
+          String.format("invalid format string: '%s'", format),
         )
       }
     }
@@ -361,14 +363,30 @@ public class CodeBlock private constructor(
       else -> throw IllegalArgumentException("expected name but was $o")
     }
 
-    private fun argToLiteral(o: Any?) = o
+    private fun argToLiteral(o: Any?) = if (o is Number) formatNumericValue(o) else o
 
     private fun argToString(o: Any?) = o?.toString()
+
+    private fun formatNumericValue(o: Number): Any? {
+      val format = DecimalFormatSymbols().apply {
+        decimalSeparator = '.'
+        groupingSeparator = '_'
+      }
+
+      val precision = if (o is Float || o is Double) o.toString().split(".").last().length else 0
+
+      val pattern = when (o) {
+        is Float, is Double -> "###,##0.0" + "#".repeat(precision - 1)
+        else -> "###,##0"
+      }
+
+      return DecimalFormat(pattern, format).format(o)
+    }
 
     private fun logDeprecationWarning(o: Any) {
       println(
         "Deprecation warning: converting $o to TypeName. Conversion of TypeMirror and" +
-          " TypeElement is deprecated in KotlinPoet, use kotlin-metadata APIs instead."
+          " TypeElement is deprecated in KotlinPoet, use kotlin-metadata APIs instead.",
       )
     }
 
@@ -461,6 +479,7 @@ public class CodeBlock private constructor(
 
     @JvmStatic public fun of(format: String, vararg args: Any?): CodeBlock =
       Builder().add(format, *args).build()
+
     @JvmStatic public fun builder(): Builder = Builder()
 
     internal val Char.isMultiCharNoArgPlaceholder get() = this == '%'
@@ -478,7 +497,7 @@ public class CodeBlock private constructor(
 public fun Collection<CodeBlock>.joinToCode(
   separator: CharSequence = ", ",
   prefix: CharSequence = "",
-  suffix: CharSequence = ""
+  suffix: CharSequence = "",
 ): CodeBlock {
   val blocks = toTypedArray()
   val placeholders = Array(blocks.size) { "%L" }

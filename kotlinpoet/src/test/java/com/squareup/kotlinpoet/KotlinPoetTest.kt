@@ -32,14 +32,14 @@ class KotlinPoetTest {
       .addProperty(
         PropertySpec.builder("c", String::class, KModifier.PUBLIC)
           .initializer("%S", "C")
-          .build()
+          .build(),
       )
       .addFunction(FunSpec.builder("d").build())
       .addType(TypeSpec.classBuilder("E").build())
       .addProperty(
         PropertySpec.builder("f", String::class, KModifier.PUBLIC)
           .initializer("%S", "F")
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
@@ -47,23 +47,22 @@ class KotlinPoetTest {
         |package com.squareup.tacos
         |
         |import kotlin.String
-        |import kotlin.Unit
         |
-        |public fun a(): Unit {
+        |public fun a() {
         |}
         |
         |public class B
         |
         |public val c: String = "C"
         |
-        |public fun d(): Unit {
+        |public fun d() {
         |}
         |
         |public class E
         |
         |public val f: String = "F"
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -84,9 +83,9 @@ class KotlinPoetTest {
             .beginControlFlow("require(cheese.isNotEmpty())")
             .addStatement("%S", "cheese cannot be empty")
             .endControlFlow()
-            .build()
+            .build(),
         )
-        .build()
+        .build(),
     )
     assertThat(source.toString()).isEqualTo(
       """
@@ -104,7 +103,7 @@ class KotlinPoetTest {
         |  }
         |}
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -120,30 +119,30 @@ class KotlinPoetTest {
             .beginControlFlow("require(!cheese.isEmpty())")
             .addStatement("%S", "cheese cannot be empty")
             .endControlFlow()
-            .build()
+            .build(),
         )
         .addProperty(
           PropertySpec.builder("cheese", String::class)
             .initializer("cheese")
-            .build()
+            .build(),
         )
         .addProperty(
           PropertySpec.builder("cilantro", String::class.asTypeName())
             .mutable()
             .initializer("cilantro")
-            .build()
+            .build(),
         )
         .addProperty(
           PropertySpec.builder("lettuce", String::class)
             .initializer("lettuce.trim()")
-            .build()
+            .build(),
         )
         .addProperty(
           PropertySpec.builder("onion", Boolean::class)
             .initializer("true")
-            .build()
+            .build(),
         )
-        .build()
+        .build(),
     )
     assertThat(source.toString()).isEqualTo(
       """
@@ -167,7 +166,7 @@ class KotlinPoetTest {
         |  }
         |}
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -178,15 +177,15 @@ class KotlinPoetTest {
         .addProperty(
           PropertySpec.builder("CHEESE", String::class, KModifier.PRIVATE, KModifier.CONST)
             .initializer("%S", "monterey jack")
-            .build()
+            .build(),
         )
         .addProperty(
           PropertySpec.builder("sauce", String::class.asTypeName(), KModifier.PUBLIC)
             .mutable()
             .initializer("%S", "chipotle mayo")
-            .build()
+            .build(),
         )
-        .build()
+        .build(),
     )
     assertThat(source.toString()).isEqualTo(
       """
@@ -200,7 +199,7 @@ class KotlinPoetTest {
         |  public var sauce: String = "chipotle mayo"
         |}
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -218,29 +217,27 @@ class KotlinPoetTest {
         .addFunction(FunSpec.builder("b").addModifiers(KModifier.PROTECTED).build())
         .addFunction(FunSpec.builder("c").addModifiers(KModifier.INTERNAL).build())
         .addFunction(FunSpec.builder("d").addModifiers(KModifier.PRIVATE).build())
-        .build()
+        .build(),
     )
     assertThat(source.toString()).isEqualTo(
       """
         |package com.squareup.tacos
         |
-        |import kotlin.Unit
-        |
         |public class Taco {
-        |  public fun a(): Unit {
+        |  public fun a() {
         |  }
         |
-        |  protected fun b(): Unit {
+        |  protected fun b() {
         |  }
         |
-        |  internal fun c(): Unit {
+        |  internal fun c() {
         |  }
         |
-        |  private fun d(): Unit {
+        |  private fun d() {
         |  }
         |}
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -252,22 +249,20 @@ class KotlinPoetTest {
           FunSpec.builder("strings")
             .addStatement("val a = %S", "basic string")
             .addStatement("val b = %S", "string with a \$ dollar sign")
-            .build()
+            .build(),
         )
-        .build()
+        .build(),
     )
     assertThat(source.toString()).isEqualTo(
       "" +
         "package com.squareup.tacos\n" +
         "\n" +
-        "import kotlin.Unit\n" +
-        "\n" +
         "public class Taco {\n" +
-        "  public fun strings(): Unit {\n" +
+        "  public fun strings() {\n" +
         "    val a = \"basic string\"\n" +
         "    val b = \"string with a \${\'\$\'} dollar sign\"\n" +
         "  }\n" +
-        "}\n"
+        "}\n",
     )
   }
 
@@ -286,7 +281,7 @@ class KotlinPoetTest {
             |whoa
             |"raw"
             |string
-              """.trimMargin()
+              """.trimMargin(),
             )
             .addStatement(
               "val d = %S",
@@ -295,20 +290,18 @@ class KotlinPoetTest {
             |string
             |with
             |${'$'}a interpolated value
-              """.trimMargin()
+              """.trimMargin(),
             )
-            .build()
+            .build(),
         )
-        .build()
+        .build(),
     )
     assertThat(source.toString()).isEqualTo(
       "" +
         "package com.squareup.tacos\n" +
         "\n" +
-        "import kotlin.Unit\n" +
-        "\n" +
         "public class Taco {\n" +
-        "  public fun strings(): Unit {\n" +
+        "  public fun strings() {\n" +
         "    val a = \"\"\"\n" +
         "        |\"\n" +
         "        |\"\"\".trimMargin()\n" +
@@ -327,7 +320,7 @@ class KotlinPoetTest {
         "        |\${\'\$\'}a interpolated value\n" +
         "        \"\"\".trimMargin()\n" +
         "  }\n" +
-        "}\n"
+        "}\n",
     )
   }
 
@@ -343,18 +336,16 @@ class KotlinPoetTest {
           FunSpec.builder("strings")
             .addStatement("val a = %S", "\n")
             .addStatement("val b = %S", " \n ")
-            .build()
+            .build(),
         )
-        .build()
+        .build(),
     )
     assertThat(source.toString()).isEqualTo(
       "" +
         "package com.squareup.tacos\n" +
         "\n" +
-        "import kotlin.Unit\n" +
-        "\n" +
         "public class Taco {\n" +
-        "  public fun strings(): Unit {\n" +
+        "  public fun strings() {\n" +
         "    val a = \"\"\"\n" +
         "        |\n" +
         "        |\"\"\".trimMargin()\n" +
@@ -363,7 +354,7 @@ class KotlinPoetTest {
         "        | \n" +
         "        \"\"\".trimMargin()\n" +
         "  }\n" +
-        "}\n"
+        "}\n",
     )
   }
 
@@ -376,25 +367,24 @@ class KotlinPoetTest {
             .addParameter(
               ParameterSpec.builder("kind", String::class)
                 .defaultValue("%S", "monterey jack")
-                .build()
+                .build(),
             )
-            .build()
+            .build(),
         )
-        .build()
+        .build(),
     )
     assertThat(source.toString()).isEqualTo(
       """
         |package com.squareup.tacos
         |
         |import kotlin.String
-        |import kotlin.Unit
         |
         |public class Taco {
-        |  public fun addCheese(kind: String = "monterey jack"): Unit {
+        |  public fun addCheese(kind: String = "monterey jack") {
         |  }
         |}
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -405,7 +395,7 @@ class KotlinPoetTest {
           .returns(String::class)
           .receiver(String::class)
           .addStatement("return substring(0, length - 1)")
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
@@ -416,7 +406,7 @@ class KotlinPoetTest {
         |
         |public fun String.shrink(): String = substring(0, length - 1)
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -428,11 +418,11 @@ class KotlinPoetTest {
           .receiver(
             LambdaTypeName.get(
               parameters = arrayOf(String::class.asClassName()),
-              returnType = String::class.asTypeName()
-            )
+              returnType = String::class.asTypeName(),
+            ),
           )
           .addStatement("return substring(0, length - 1)")
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
@@ -443,7 +433,7 @@ class KotlinPoetTest {
         |
         |public fun ((String) -> String).shrink(): String = substring(0, length - 1)
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -455,11 +445,11 @@ class KotlinPoetTest {
           .receiver(
             LambdaTypeName.get(
               parameters = arrayOf(ParameterSpec.builder("name", String::class).build()),
-              returnType = Unit::class.asClassName()
-            )
+              returnType = Unit::class.asClassName(),
+            ),
           )
           .addStatement("return Unit")
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
@@ -471,7 +461,7 @@ class KotlinPoetTest {
       |
       |public fun ((name: String) -> Unit).whatever(): Unit = Unit
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -485,13 +475,13 @@ class KotlinPoetTest {
               parameters = listOf(
                 ParameterSpec.builder("name", String::class).build(),
                 ParameterSpec.unnamed(Int::class),
-                ParameterSpec.builder("age", Long::class).build()
+                ParameterSpec.builder("age", Long::class).build(),
               ),
-              returnType = Unit::class.asClassName()
-            )
+              returnType = Unit::class.asClassName(),
+            ),
           )
           .addStatement("return Unit")
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
@@ -509,7 +499,7 @@ class KotlinPoetTest {
       |  age: Long,
       |) -> Unit).whatever(): Unit = Unit
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -521,9 +511,9 @@ class KotlinPoetTest {
           .getter(
             FunSpec.getterBuilder()
               .addStatement("return length")
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
@@ -536,7 +526,7 @@ class KotlinPoetTest {
         |public val String.extensionProperty: Int
         |  get() = length
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -547,15 +537,15 @@ class KotlinPoetTest {
           .receiver(
             LambdaTypeName.get(
               parameters = arrayOf(String::class.asClassName()),
-              returnType = String::class.asClassName()
-            )
+              returnType = String::class.asClassName(),
+            ),
           )
           .getter(
             FunSpec.getterBuilder()
               .addStatement("return length")
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
@@ -568,7 +558,7 @@ class KotlinPoetTest {
         |public val ((String) -> String).extensionProperty: Int
         |  get() = length
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -589,16 +579,16 @@ class KotlinPoetTest {
             FunSpec.getterBuilder()
               .addStatement("println(%S)", "getter")
               .addStatement("return field")
-              .build()
+              .build(),
           )
           .setter(
             FunSpec.setterBuilder()
               .addParameter("value", Int::class)
               .addStatement("println(%S)", "setter")
               .addStatement("field = value")
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
@@ -617,7 +607,7 @@ class KotlinPoetTest {
         |    field = value
         |  }
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -628,7 +618,7 @@ class KotlinPoetTest {
           .builder("foo", ClassName(tacosPackage, "Foo").copy(nullable = true))
           .addModifiers(KModifier.PRIVATE)
           .initializer("DefaultFooRegistry.getInstance().getDefaultFooInstanceForPropertiesFiles(file)")
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
@@ -638,7 +628,7 @@ class KotlinPoetTest {
       |private val foo: Foo? =
       |    DefaultFooRegistry.getInstance().getDefaultFooInstanceForPropertiesFiles(file)
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -651,15 +641,15 @@ class KotlinPoetTest {
             PropertySpec.builder("q", String::class.asTypeName())
               .mutable()
               .addModifiers(KModifier.ABSTRACT, KModifier.PROTECTED)
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .addProperty(
         PropertySpec.builder("p", String::class)
           .addModifiers(KModifier.CONST, KModifier.INTERNAL)
           .initializer("%S", "a")
-          .build()
+          .build(),
       )
       .addType(
         TypeSpec.classBuilder("B")
@@ -669,11 +659,14 @@ class KotlinPoetTest {
             PropertySpec.builder("q", String::class.asTypeName())
               .mutable()
               .addModifiers(
-                KModifier.FINAL, KModifier.LATEINIT, KModifier.OVERRIDE, KModifier.PUBLIC
+                KModifier.FINAL,
+                KModifier.LATEINIT,
+                KModifier.OVERRIDE,
+                KModifier.PUBLIC,
               )
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
@@ -692,7 +685,7 @@ class KotlinPoetTest {
         |  public final override lateinit var q: String
         |}
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -704,21 +697,24 @@ class KotlinPoetTest {
         .addFunction(
           FunSpec.builder("get")
             .addModifiers(
-              KModifier.EXTERNAL, KModifier.INFIX, KModifier.OPEN, KModifier.OPERATOR,
-              KModifier.PROTECTED
+              KModifier.EXTERNAL,
+              KModifier.INFIX,
+              KModifier.OPEN,
+              KModifier.OPERATOR,
+              KModifier.PROTECTED,
             )
             .addParameter("v", String::class)
             .returns(String::class)
-            .build()
+            .build(),
         )
         .addFunction(
           FunSpec.builder("loop")
             .addModifiers(KModifier.FINAL, KModifier.INLINE, KModifier.INTERNAL, KModifier.TAILREC)
             .returns(String::class)
             .addStatement("return %S", "a")
-            .build()
+            .build(),
         )
-        .build()
+        .build(),
     )
     assertThat(source.toString()).isEqualTo(
       """
@@ -732,7 +728,7 @@ class KotlinPoetTest {
         |  internal final tailrec inline fun loop(): String = "a"
         |}
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -743,7 +739,7 @@ class KotlinPoetTest {
           .addParameter("s", String::class)
           .returns(String::class)
           .addStatement("return s + %S", "a")
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
@@ -754,7 +750,7 @@ class KotlinPoetTest {
         |
         |public fun addA(s: String): String = s + "a"
         |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -768,34 +764,32 @@ class KotlinPoetTest {
         PropertySpec.builder("bar", suspendingLambda)
           .mutable()
           .initializer("{ %T() }", barType)
-          .build()
+          .build(),
       )
       .addProperty(
         PropertySpec.builder("nullBar", suspendingLambda.copy(nullable = true))
           .mutable()
           .initializer("null")
-          .build()
+          .build(),
       )
       .addFunction(
         FunSpec.builder("foo")
           .addParameter("bar", suspendingLambda)
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
       """
       |package com.squareup.tacos
       |
-      |import kotlin.Unit
-      |
       |public var bar: suspend (Foo) -> Bar = { Bar() }
       |
       |public var nullBar: (suspend (Foo) -> Bar)? = null
       |
-      |public fun foo(bar: suspend (Foo) -> Bar): Unit {
+      |public fun foo(bar: suspend (Foo) -> Bar) {
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -807,10 +801,10 @@ class KotlinPoetTest {
           .addParameter(
             ParameterSpec.builder("timeUnit", TimeUnit::class)
               .defaultValue("%T.%L", TimeUnit::class, TimeUnit.MILLISECONDS.name)
-              .build()
+              .build(),
           )
           .addStatement("this.timeout = timeUnit.toMillis(duration)")
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
@@ -819,13 +813,12 @@ class KotlinPoetTest {
       |
       |import java.util.concurrent.TimeUnit
       |import kotlin.Long
-      |import kotlin.Unit
       |
-      |public fun timeout(duration: Long, timeUnit: TimeUnit = TimeUnit.MILLISECONDS): Unit {
+      |public fun timeout(duration: Long, timeUnit: TimeUnit = TimeUnit.MILLISECONDS) {
       |  this.timeout = timeUnit.toMillis(duration)
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -838,36 +831,34 @@ class KotlinPoetTest {
               "%L",
               PropertySpec.builder("d1", DYNAMIC)
                 .initializer("%S", "Taco")
-                .build()
-            )
+                .build(),
+            ),
           )
           .addCode(
             CodeBlock.of(
               "%L",
               PropertySpec.builder("d2", DYNAMIC)
                 .initializer("1f")
-                .build()
-            )
+                .build(),
+            ),
           )
           .addStatement("// dynamics are dangerous!")
           .addStatement("println(d1 - d2)")
-          .build()
+          .build(),
       )
       .build()
     assertThat(source.toString()).isEqualTo(
       """
       |package com.squareup.tacos
       |
-      |import kotlin.Unit
-      |
-      |public fun dynamicTest(): Unit {
+      |public fun dynamicTest() {
       |  val d1: dynamic = "Taco"
       |  val d2: dynamic = 1f
       |  // dynamics are dangerous!
       |  println(d1 - d2)
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -878,15 +869,15 @@ class KotlinPoetTest {
           .primaryConstructor(
             FunSpec.constructorBuilder()
               .addParameter("foo", String::class)
-              .build()
+              .build(),
           )
           .addProperty(
             PropertySpec.builder("foo", String::class)
               .jvmField()
               .initializer("foo")
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .build()
     assertThat(file.toString()).isEqualTo(
@@ -901,7 +892,7 @@ class KotlinPoetTest {
       |  public val foo: String,
       |)
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -913,9 +904,9 @@ class KotlinPoetTest {
           .addParameter(
             "a",
             List::class.asTypeName()
-              .parameterizedBy(Int::class.asTypeName().jvmSuppressWildcards())
+              .parameterizedBy(Int::class.asTypeName().jvmSuppressWildcards()),
           )
-          .build()
+          .build(),
       )
       .build()
     assertThat(file.toString()).isEqualTo(
@@ -923,14 +914,13 @@ class KotlinPoetTest {
       |package com.squareup.tacos
       |
       |import kotlin.Int
-      |import kotlin.Unit
       |import kotlin.collections.List
       |import kotlin.jvm.JvmSuppressWildcards
       |
-      |public fun foo(a: List<@JvmSuppressWildcards Int>): Unit {
+      |public fun foo(a: List<@JvmSuppressWildcards Int>) {
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -954,12 +944,12 @@ class KotlinPoetTest {
               .addParameter(
                 ParameterSpec.builder("foo", lambdaTypeName)
                   .defaultValue(initializer)
-                  .build()
+                  .build(),
               )
-              .build()
+              .build(),
           )
           .addProperty(property)
-          .build()
+          .build(),
       )
       .build()
     assertThat(file.toString()).isEqualTo(
@@ -975,7 +965,7 @@ class KotlinPoetTest {
       |  ,
       |)
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -987,14 +977,14 @@ class KotlinPoetTest {
           .primaryConstructor(
             FunSpec.constructorBuilder()
               .addParameter("when", Float::class)
-              .build()
+              .build(),
           )
           .addProperty(
             PropertySpec.builder("when", Float::class)
               .initializer("when")
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .build()
     assertThat(file.toString()).isEqualTo(
@@ -1007,7 +997,7 @@ class KotlinPoetTest {
       |  public val `when`: Float,
       |)
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -1017,7 +1007,7 @@ class KotlinPoetTest {
       .addFunction(
         FunSpec.builder("functionWithAPrettyLongNameThatWouldCauseWrapping")
           .addParameter("parameterWithALongNameThatWouldAlsoCauseWrapping", String::class)
-          .build()
+          .build(),
       )
       .build()
     assertThat(file.toString()).isEqualTo(
@@ -1025,14 +1015,12 @@ class KotlinPoetTest {
       |package com.squareup.tacos
       |
       |import kotlin.String
-      |import kotlin.Unit
       |
       |public
-      |    fun functionWithAPrettyLongNameThatWouldCauseWrapping(parameterWithALongNameThatWouldAlsoCauseWrapping: String):
-      |    Unit {
+      |    fun functionWithAPrettyLongNameThatWouldCauseWrapping(parameterWithALongNameThatWouldAlsoCauseWrapping: String) {
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -1049,20 +1037,20 @@ class KotlinPoetTest {
                 AnnotationSpec.builder(wireField)
                   .addMember("tag = %L", 1)
                   .addMember("adapter = %S", "CustomStringAdapterWithALongNameThatCauses")
-                  .build()
+                  .build(),
               )
               .initializer("name")
-              .build()
+              .build(),
           )
           .primaryConstructor(
             FunSpec.constructorBuilder()
               .addParameter(
                 ParameterSpec.builder("name", String::class)
-                  .build()
+                  .build(),
               )
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .build()
     assertThat(file.toString()).isEqualTo(
@@ -1080,7 +1068,7 @@ class KotlinPoetTest {
       |  public val name: String,
       |)
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -1091,21 +1079,21 @@ class KotlinPoetTest {
         TypeSpec.classBuilder("Builder")
           .addKdoc(
             "Builder class for Foo. Allows creating instances of Foo by initializing " +
-              "a subset of their fields, following the Builder pattern.\n"
+              "a subset of their fields, following the Builder pattern.\n",
           )
           .addFunction(
             FunSpec.builder("summary_text")
               .addKdoc(
                 "The description for the choice, e.g. \"Currently unavailable due to " +
-                  "high demand. Please try later.\" May be null."
+                  "high demand. Please try later.\" May be null.",
               )
               .addParameter("summary_text", String::class.asClassName().copy(nullable = true))
               .returns(ClassName("com.squareup.tacos", "Builder"))
               .addStatement("this.summary_text = summary_text")
               .addStatement("return this")
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .build()
     assertThat(file.toString()).isEqualTo(
@@ -1129,7 +1117,7 @@ class KotlinPoetTest {
       |  }
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -1140,7 +1128,7 @@ class KotlinPoetTest {
       .addFunction(
         FunSpec.builder("main")
           .addStatement("println(%P)", CodeBlock.of("Here's a taco: \${%T()}", taco))
-          .build()
+          .build(),
       )
       .build()
     assertThat(file.toString()).isEqualTo(
@@ -1148,13 +1136,12 @@ class KotlinPoetTest {
       |package com.squareup.example
       |
       |import com.squareup.tacos.Taco
-      |import kotlin.Unit
       |
-      |public fun main(): Unit {
+      |public fun main() {
       |  println(${'"'}""Here's a taco: ${'$'}{Taco()}""${'"'})
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -1166,22 +1153,21 @@ class KotlinPoetTest {
         FunSpec.builder("main")
           .addStatement("val ints = arrayOf(1, 2, 3)")
           .addStatement("println(%P)", CodeBlock.of("\${ints.%M()}", contentToString))
-          .build()
+          .build(),
       )
       .build()
     assertThat(file.toString()).isEqualTo(
       """
       |package com.squareup.example
       |
-      |import kotlin.Unit
       |import kotlin.collections.contentToString
       |
-      |public fun main(): Unit {
+      |public fun main() {
       |  val ints = arrayOf(1, 2, 3)
       |  println(${'"'}""${'$'}{ints.contentToString()}""${'"'})
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -1211,10 +1197,10 @@ class KotlinPoetTest {
       | * @param a Progress in %
       | * @param b Some other parameter with %
       | */
-      |public fun test(a: kotlin.Int, b: kotlin.Int): kotlin.Unit {
+      |public fun test(a: kotlin.Int, b: kotlin.Int) {
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -1231,7 +1217,7 @@ class KotlinPoetTest {
         FunSpec
           .builder("test")
           .addParameter("e", customExceptionName)
-          .build()
+          .build(),
       )
       .build()
 
@@ -1242,14 +1228,12 @@ class KotlinPoetTest {
       """
       |package test
       |
-      |import kotlin.Unit
-      |
       |public class Exception : kotlin.Exception() {
-      |  public fun test(e: Exception): Unit {
+      |  public fun test(e: Exception) {
       |  }
       |}
       |
-      """.trimMargin()
+      """.trimMargin(),
     )
   }
 
@@ -1261,19 +1245,19 @@ class KotlinPoetTest {
             FunSpec.constructorBuilder()
               .addParameter("_", Float::class)
               .addParameter("____", Float::class)
-              .build()
+              .build(),
           )
           .addProperty(
             PropertySpec.builder("_", Float::class)
               .initializer("_")
-              .build()
+              .build(),
           )
           .addProperty(
             PropertySpec.builder("____", Float::class)
               .initializer("____")
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .build()
     assertThat(file.toString()).isEqualTo(
@@ -1287,7 +1271,171 @@ class KotlinPoetTest {
       |  public val `____`: Float,
       |)
       |
-      """.trimMargin()
+      """.trimMargin(),
+    )
+  }
+
+  @Test fun generatedImportAliases() {
+    val squareTaco = ClassName("com.squareup.tacos", "Taco")
+    val blockTaco = ClassName("xyz.block.tacos", "Taco")
+    val kotlinIsNullOrEmpty = MemberName("kotlin.text", "isNullOrEmpty")
+    val cashIsNullOrEmpty = MemberName("com.squareup.cash.util", "isNullOrEmpty")
+    val file = FileSpec.builder("com.example", "Test")
+      .addFunction(
+        FunSpec.builder("main")
+          .addStatement("val squareTaco = %L", squareTaco.constructorReference())
+          .addStatement("val blockTaco = %L", blockTaco.constructorReference())
+          .addStatement("val isSquareTacoNull = %S.%M()", "Taco", kotlinIsNullOrEmpty)
+          .addStatement("val isBlockTacoNull = %S.%M()", "Taco", cashIsNullOrEmpty)
+          .build(),
+      )
+      .build()
+    assertThat(file.toString()).isEqualTo(
+      """
+      |package com.example
+      |
+      |import com.squareup.cash.util.isNullOrEmpty as utilIsNullOrEmpty
+      |import com.squareup.tacos.Taco as SquareupTacosTaco
+      |import kotlin.text.isNullOrEmpty as textIsNullOrEmpty
+      |import xyz.block.tacos.Taco as BlockTacosTaco
+      |
+      |public fun main() {
+      |  val squareTaco = ::SquareupTacosTaco
+      |  val blockTaco = ::BlockTacosTaco
+      |  val isSquareTacoNull = "Taco".textIsNullOrEmpty()
+      |  val isBlockTacoNull = "Taco".utilIsNullOrEmpty()
+      |}
+      |
+      """.trimMargin(),
+    )
+  }
+
+  // https://github.com/square/kotlinpoet/issues/1518
+  @Test fun generatedImportAliasesSamePackageDifferentContainingClasses() {
+    val strokeCapRound = MemberName(
+      enclosingClassName = ClassName("androidx.compose.ui.graphics", "StrokeCap").nestedClass("Companion"),
+      simpleName = "Round",
+    )
+    val strokeJoinRound = MemberName(
+      enclosingClassName = ClassName("androidx.compose.ui.graphics", "StrokeJoin").nestedClass("Companion"),
+      simpleName = "Round",
+    )
+    val file = FileSpec.builder("com.example", "Test")
+      .addFunction(
+        FunSpec.builder("main")
+          .addStatement("val strokeCapRound = %M()", strokeCapRound)
+          .addStatement("val strokeJoinRound = %M()", strokeJoinRound)
+          .build(),
+      )
+      .build()
+    assertThat(file.toString()).isEqualTo(
+      """
+      |package com.example
+      |
+      |import androidx.compose.ui.graphics.StrokeCap.Companion.Round as strokeCapRound
+      |import androidx.compose.ui.graphics.StrokeJoin.Companion.Round as strokeJoinRound
+      |
+      |public fun main() {
+      |  val strokeCapRound = strokeCapRound()
+      |  val strokeJoinRound = strokeJoinRound()
+      |}
+      |
+      """.trimMargin(),
+    )
+  }
+
+  @Test fun memberImportsOverGeneratedImportAliases() {
+    val squareTaco = ClassName("com.squareup.tacos", "Taco")
+    val blockTaco = ClassName("xyz.block.tacos", "Taco")
+    val kotlinIsNullOrEmpty = MemberName("kotlin.text", "isNullOrEmpty")
+    val cashIsNullOrEmpty = MemberName("com.squareup.cash.util", "isNullOrEmpty")
+    val file = FileSpec.builder("com.example", "Test")
+      .addAliasedImport(squareTaco, "SquareTaco")
+      .addAliasedImport(blockTaco, "BlockTaco")
+      .addAliasedImport(kotlinIsNullOrEmpty, "kotlinIsNullOrEmpty")
+      .addAliasedImport(cashIsNullOrEmpty, "cashIsNullOrEmpty")
+      .addFunction(
+        FunSpec.builder("main")
+          .addStatement("val squareTaco = %L", squareTaco.constructorReference())
+          .addStatement("val blockTaco = %L", blockTaco.constructorReference())
+          .addStatement("val isSquareTacoNull = %S.%M()", "Taco", kotlinIsNullOrEmpty)
+          .addStatement("val isBlockTacoNull = %S.%M()", "Taco", cashIsNullOrEmpty)
+          .build(),
+      )
+      .build()
+    assertThat(file.toString()).isEqualTo(
+      """
+      |package com.example
+      |
+      |import com.squareup.cash.util.isNullOrEmpty as cashIsNullOrEmpty
+      |import com.squareup.tacos.Taco as SquareTaco
+      |import kotlin.text.isNullOrEmpty as kotlinIsNullOrEmpty
+      |import xyz.block.tacos.Taco as BlockTaco
+      |
+      |public fun main() {
+      |  val squareTaco = ::SquareTaco
+      |  val blockTaco = ::BlockTaco
+      |  val isSquareTacoNull = "Taco".kotlinIsNullOrEmpty()
+      |  val isBlockTacoNull = "Taco".cashIsNullOrEmpty()
+      |}
+      |
+      """.trimMargin(),
+    )
+  }
+
+  // https://github.com/square/kotlinpoet/issues/1563
+  @Test fun nestedClassesWithConflictingAutoGeneratedImports() {
+    val source = FileSpec.builder("com.squareup.tacos", "Taco")
+      .addType(
+        TypeSpec.classBuilder("Taco")
+          .addProperty("madeFreshDate", ClassName("java.util", "Date", "Builder"))
+          .addProperty("madeFreshDatabaseDate", ClassName("java.sql", "Date", "Builder"))
+          .build(),
+      )
+      .build()
+    assertThat(source.toString()).isEqualTo(
+      """
+        |package com.squareup.tacos
+        |
+        |import java.sql.Date as SqlDate
+        |import java.util.Date as UtilDate
+        |
+        |public class Taco {
+        |  public val madeFreshDate: UtilDate.Builder
+        |
+        |  public val madeFreshDatabaseDate: SqlDate.Builder
+        |}
+        |
+      """.trimMargin(),
+    )
+  }
+
+  // https://github.com/square/kotlinpoet/issues/1563
+  @Test fun nestedClassesWithConflictingManuallySuppliedImports() {
+    val source = FileSpec.builder("com.squareup.tacos", "Taco")
+      .addAliasedImport(ClassName("java.util", "Date"), "UtilDate")
+      .addAliasedImport(ClassName("java.sql", "Date"), "SqlDate")
+      .addType(
+        TypeSpec.classBuilder("Taco")
+          .addProperty("madeFreshDate", ClassName("java.util", "Date", "Builder"))
+          .addProperty("madeFreshDatabaseDate", ClassName("java.sql", "Date", "Builder"))
+          .build(),
+      )
+      .build()
+    assertThat(source.toString()).isEqualTo(
+      """
+        |package com.squareup.tacos
+        |
+        |import java.sql.Date as SqlDate
+        |import java.util.Date as UtilDate
+        |
+        |public class Taco {
+        |  public val madeFreshDate: UtilDate.Builder
+        |
+        |  public val madeFreshDatabaseDate: SqlDate.Builder
+        |}
+        |
+      """.trimMargin(),
     )
   }
 }

@@ -23,10 +23,10 @@ import com.tschuchort.compiletesting.kspArgs
 import com.tschuchort.compiletesting.kspIncremental
 import com.tschuchort.compiletesting.kspSourcesDir
 import com.tschuchort.compiletesting.symbolProcessorProviders
+import java.io.File
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
 class TestProcessorTest {
 
@@ -46,6 +46,7 @@ class TestProcessorTest {
            import com.squareup.kotlinpoet.ksp.test.processor.AnotherAnnotation
            import com.squareup.kotlinpoet.ksp.test.processor.ComprehensiveAnnotation
            import com.squareup.kotlinpoet.ksp.test.processor.ExampleAnnotation
+           import com.squareup.kotlinpoet.ksp.test.processor.ExampleAnnotationWithDefaults
 
            typealias TypeAliasName = String
            typealias GenericTypeAlias = List<String>
@@ -56,6 +57,8 @@ class TestProcessorTest {
              booleanArray = [true],
              byte = 0.toByte(),
              byteArray = [0.toByte()],
+             char = 'a',
+             charArray = ['a', 'b', 'c'],
              short = 0.toShort(),
              shortArray = [0.toShort()],
              int = 0,
@@ -73,6 +76,32 @@ class TestProcessorTest {
              enumValue = AnnotationEnumValue.ONE,
              enumValueArray = [AnnotationEnumValue.ONE, AnnotationEnumValue.TWO],
              anotherAnnotation = AnotherAnnotation("Hello"),
+             anotherAnnotationArray = [AnotherAnnotation("Hello")]
+           )
+           @ExampleAnnotationWithDefaults(
+             true, // Omit the name intentionally here to test names are still picked up
+             booleanArray = [false],
+             byte = 0.toByte(),
+             byteArray = [1.toByte()],
+             char = 'C',
+             charArray = ['C'],
+             short = 0.toShort(),
+             shortArray = [1.toShort()],
+             int = 0,
+             intArray = [1],
+             long = 0L,
+             longArray = [1L],
+             float = 0f,
+             floatArray = [1f],
+             double = 1.0,
+             doubleArray = [0.0],
+             string = "Hello",
+             stringArray = [""],
+             someClass = String::class,
+             someClasses = [Int::class],
+             enumValue = AnnotationEnumValue.ONE,
+             enumValueArray = [AnnotationEnumValue.ONE, AnnotationEnumValue.TWO],
+             anotherAnnotation = AnotherAnnotation(""),
              anotherAnnotationArray = [AnotherAnnotation("Hello")]
            )
            @ExampleAnnotation
@@ -134,8 +163,8 @@ class TestProcessorTest {
 
              }
            }
-           """
-      )
+           """,
+      ),
     )
     val result = compilation.compile()
     assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
@@ -148,6 +177,7 @@ class TestProcessorTest {
       import com.squareup.kotlinpoet.ksp.test.processor.AnnotationEnumValue
       import com.squareup.kotlinpoet.ksp.test.processor.AnotherAnnotation
       import com.squareup.kotlinpoet.ksp.test.processor.ComprehensiveAnnotation
+      import com.squareup.kotlinpoet.ksp.test.processor.ExampleAnnotationWithDefaults
       import kotlin.Any
       import kotlin.Array
       import kotlin.Boolean
@@ -158,7 +188,6 @@ class TestProcessorTest {
       import kotlin.Int
       import kotlin.IntArray
       import kotlin.String
-      import kotlin.Unit
       import kotlin.collections.List
       import kotlin.collections.Map
       import kotlin.collections.MutableList
@@ -166,19 +195,21 @@ class TestProcessorTest {
 
       @ComprehensiveAnnotation<String>(
         boolean = true,
-        booleanArray = arrayOf(true),
+        booleanArray = booleanArrayOf(true),
         byte = 0.toByte(),
-        byteArray = arrayOf(0.toByte()),
+        byteArray = byteArrayOf(0.toByte()),
+        char = 'a',
+        charArray = charArrayOf('a', 'b', 'c'),
         short = 0.toShort(),
-        shortArray = arrayOf(0.toShort()),
+        shortArray = shortArrayOf(0.toShort()),
         int = 0,
-        intArray = arrayOf(0),
+        intArray = intArrayOf(0),
         long = 0,
-        longArray = arrayOf(0),
+        longArray = longArrayOf(0),
         float = 0.0f,
-        floatArray = arrayOf(0.0f),
+        floatArray = floatArrayOf(0.0f),
         double = 0.0,
-        doubleArray = arrayOf(0.0),
+        doubleArray = doubleArrayOf(0.0),
         string = "Hello",
         stringArray = arrayOf("Hello"),
         someClass = String::class,
@@ -188,6 +219,18 @@ class TestProcessorTest {
         anotherAnnotation = AnotherAnnotation(input = "Hello"),
         anotherAnnotationArray = arrayOf(AnotherAnnotation(input = "Hello")),
         defaultingString = "defaultValue",
+      )
+      @ExampleAnnotationWithDefaults(
+        booleanArray = booleanArrayOf(false),
+        byte = 0.toByte(),
+        short = 0.toShort(),
+        int = 0,
+        long = 0,
+        float = 0.0f,
+        doubleArray = doubleArrayOf(0.0),
+        string = "Hello",
+        someClasses = arrayOf(Int::class),
+        enumValueArray = arrayOf(AnnotationEnumValue.ONE, AnnotationEnumValue.TWO),
       )
       public class SmokeTestClass<T, R : Any, E : Enum<E>> {
         @field:AnotherAnnotation(input = "siteTargeting")
@@ -221,7 +264,7 @@ class TestProcessorTest {
           param1: Function0<String>,
           param2: Function1<String, String>,
           param3: Function1<String, String>,
-        ): Unit {
+        ) {
         }
 
         public fun wildTypes(
@@ -248,11 +291,11 @@ class TestProcessorTest {
           genericAlias: GenericTypeAlias,
           parameterizedTypeAlias: ParameterizedTypeAlias<String>,
           nestedArray: Array<Map<String, Any>>?,
-        ): Unit {
+        ) {
         }
       }
 
-      """.trimIndent()
+      """.trimIndent(),
     )
   }
 
@@ -284,8 +327,8 @@ class TestProcessorTest {
              ) {
              }
            }
-           """
-      )
+           """,
+      ),
     )
     compilation.kspArgs["unwrapTypeAliases"] = "true"
     val result = compilation.compile()
@@ -298,7 +341,6 @@ class TestProcessorTest {
 
       import kotlin.Int
       import kotlin.String
-      import kotlin.Unit
       import kotlin.collections.List
       import kotlin.collections.Map
 
@@ -309,11 +351,80 @@ class TestProcessorTest {
           genericMapAlias: Map<Int, String>,
           t1Unused: Map<Int, String>,
           a1: Map<String, Int>,
-        ): Unit {
+        ) {
         }
       }
 
-      """.trimIndent()
+      """.trimIndent(),
+    )
+  }
+
+  @Test
+  fun removeDefaultValues() {
+    val compilation = prepareCompilation(
+      kotlin(
+        "Example.kt",
+        """
+           package test
+
+           import com.squareup.kotlinpoet.ksp.test.processor.ExampleAnnotationWithDefaults
+           import com.squareup.kotlinpoet.ksp.test.processor.ExampleAnnotation
+           import com.squareup.kotlinpoet.ksp.test.processor.AnotherAnnotation
+           import com.squareup.kotlinpoet.ksp.test.processor.AnnotationEnumValue
+
+           @ExampleAnnotation
+           @ExampleAnnotationWithDefaults(
+             true, // Omit the name intentionally here to test names are still picked up
+             booleanArray = [true],
+             byte = 1.toByte(),
+             byteArray = [1.toByte()],
+             char = 'C',
+             charArray = ['C'],
+             short = 1.toShort(),
+             shortArray = [1.toShort()],
+             int = 1,
+             intArray = [1],
+             long = 1L,
+             longArray = [1L],
+             float = 1f,
+             floatArray = [1f],
+             double = 1.0,
+             doubleArray = [1.0],
+             string = "",
+             stringArray = [""],
+             someClass = String::class,
+             someClasses = [String::class],
+             enumValue = AnnotationEnumValue.ONE,
+             enumValueArray = [AnnotationEnumValue.ONE],
+             anotherAnnotation = AnotherAnnotation(""),
+             anotherAnnotationArray = [AnotherAnnotation("")]
+           )
+           open class Node<T : Node<T, R>, R : Node<R, T>> {
+             var t: T? = null
+             var r: R? = null
+           }
+           """,
+      ),
+    )
+
+    val result = compilation.compile()
+    assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+    val generatedFileText = File(compilation.kspSourcesDir, "kotlin/test/TestNode.kt")
+      .readText()
+    assertThat(generatedFileText).isEqualTo(
+      """
+      package test
+
+      import com.squareup.kotlinpoet.ksp.test.processor.ExampleAnnotationWithDefaults
+
+      @ExampleAnnotationWithDefaults
+      public open class Node<T : Node<T, R>, R : Node<R, T>> {
+        public var t: T?
+
+        public var r: R?
+      }
+
+      """.trimIndent(),
     )
   }
 
@@ -332,8 +443,8 @@ class TestProcessorTest {
              var t: T? = null
              var r: R? = null
            }
-           """
-      )
+           """,
+      ),
     )
 
     val result = compilation.compile()
@@ -350,7 +461,7 @@ class TestProcessorTest {
         public var r: R?
       }
 
-      """.trimIndent()
+      """.trimIndent(),
     )
   }
 
@@ -369,8 +480,8 @@ class TestProcessorTest {
            class EnumWrapper {
             val enumValue: Enum<*>
            }
-           """
-      )
+           """,
+      ),
     )
 
     val result = compilation.compile()
@@ -387,7 +498,7 @@ class TestProcessorTest {
         public val enumValue: Enum<*>
       }
 
-      """.trimIndent()
+      """.trimIndent(),
     )
   }
 
@@ -414,8 +525,8 @@ class TestProcessorTest {
            interface TransitiveAliases {
               fun <T : Alias41<Alias23, out Alias77<Alias73<Int>>>> bar(vararg arg1: T)
            }
-           """
-      )
+           """,
+      ),
     )
 
     val result = compilation.compile()
@@ -427,14 +538,205 @@ class TestProcessorTest {
     package test
 
     import kotlin.Int
-    import kotlin.Unit
 
     public class TransitiveAliases {
-      public fun <T : Alias41<Alias23, out Alias77<Alias73<Int>>>> bar(arg1: T): Unit {
+      public fun <T : Alias41<Alias23, out Alias77<Alias73<Int>>>> bar(arg1: T) {
       }
     }
 
-      """.trimIndent()
+      """.trimIndent(),
+    )
+  }
+
+  @Test
+  fun aliasAsTypeArgument() {
+    val compilation = prepareCompilation(
+      kotlin(
+        "Example.kt",
+        """
+           package test
+
+           import com.squareup.kotlinpoet.ksp.test.processor.ExampleAnnotation
+
+           typealias Alias997 = Map<String, Int>
+
+           @ExampleAnnotation
+           interface AliasAsTypeArgument {
+              fun bar(arg1: List<Alias997>)
+           }
+           """,
+      ),
+    )
+
+    val result = compilation.compile()
+    assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+    val generatedFileText = File(compilation.kspSourcesDir, "kotlin/test/TestAliasAsTypeArgument.kt")
+      .readText()
+
+    assertThat(generatedFileText).isEqualTo(
+      """
+    package test
+
+    import kotlin.collections.List
+
+    public class AliasAsTypeArgument {
+      public fun bar(arg1: List<Alias997>) {
+      }
+    }
+
+      """.trimIndent(),
+    )
+  }
+
+  @Test
+  fun regression_1513() {
+    val compilation = prepareCompilation(
+      kotlin(
+        "Example.kt",
+        """
+           package test
+
+           import com.squareup.kotlinpoet.ksp.test.processor.ExampleAnnotation
+
+           interface Repository<T>
+           @ExampleAnnotation
+           class RealRepository @Inject constructor() : Repository<String>
+           """,
+      ),
+    )
+
+    val result = compilation.compile()
+    assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+    val generatedFileText = File(compilation.kspSourcesDir, "kotlin/test/TestRealRepository.kt")
+      .readText()
+
+    assertThat(generatedFileText).isEqualTo(
+      """
+        package test
+
+        import kotlin.String
+
+        public class RealRepository : Repository<String>
+
+      """.trimIndent(),
+    )
+  }
+
+  @Test
+  fun regression_1513_annotation() {
+    val compilation = prepareCompilation(
+      kotlin(
+        "Example.kt",
+        """
+           package test
+
+           import com.squareup.kotlinpoet.ksp.test.processor.ExampleAnnotation
+
+           annotation class GenericAnnotation<T>
+
+           @ExampleAnnotation
+           @GenericAnnotation<String>
+           class RealRepository
+           """,
+      ),
+    )
+
+    val result = compilation.compile()
+    assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+    val generatedFileText = File(compilation.kspSourcesDir, "kotlin/test/TestRealRepository.kt")
+      .readText()
+
+    assertThat(generatedFileText).isEqualTo(
+      """
+        package test
+
+        import kotlin.String
+
+        @GenericAnnotation<String>
+        public class RealRepository
+
+      """.trimIndent(),
+    )
+  }
+
+  @Test
+  fun regression_1304() {
+    val compilation = prepareCompilation(
+      kotlin(
+        "Example.kt",
+        """
+           package test
+
+           import com.squareup.kotlinpoet.ksp.test.processor.ExampleAnnotation
+
+           interface Flow<T>
+           typealias LeAlias = Map<Int, String>
+
+           @ExampleAnnotation
+           class RealRepository {
+             lateinit var prop: LeAlias
+             lateinit var complicated: Flow<LeAlias>
+           }
+           """,
+      ),
+    )
+
+    val result = compilation.compile()
+    assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+    val generatedFileText = File(compilation.kspSourcesDir, "kotlin/test/TestRealRepository.kt")
+      .readText()
+
+    assertThat(generatedFileText).isEqualTo(
+      """
+        package test
+
+        public class RealRepository {
+          public lateinit var prop: LeAlias
+
+          public lateinit var complicated: Flow<LeAlias>
+        }
+
+      """.trimIndent(),
+    )
+  }
+
+  @Test
+  fun regression_1304_with_type_parameters() {
+    val compilation = prepareCompilation(
+      kotlin(
+        "Example.kt",
+        """
+           package test
+
+           import com.squareup.kotlinpoet.ksp.test.processor.ExampleAnnotation
+
+           interface Flow<T>
+           typealias LeAlias<T> = Flow<T>
+
+           @ExampleAnnotation
+           class RealRepository {
+             lateinit var prop: LeAlias<String>
+           }
+           """,
+      ),
+    )
+
+    val result = compilation.compile()
+    assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+    val generatedFileText = File(compilation.kspSourcesDir, "kotlin/test/TestRealRepository.kt")
+      .readText()
+
+    assertThat(generatedFileText).isEqualTo(
+      """
+        package test
+
+        import kotlin.String
+
+        public class RealRepository {
+          public lateinit var prop: LeAlias<String>
+        }
+
+      """.trimIndent(),
     )
   }
 

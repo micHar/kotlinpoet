@@ -24,6 +24,9 @@ import com.squareup.kotlinpoet.metadata.classinspectors.ElementsClassInspector
 import com.squareup.kotlinpoet.metadata.classinspectors.ReflectiveClassInspector
 import com.squareup.kotlinpoet.metadata.specs.MultiClassInspectorTest.ClassInspectorType
 import com.squareup.kotlinpoet.metadata.toKotlinClassMetadata
+import java.lang.annotation.Inherited
+import kotlin.annotation.AnnotationRetention.RUNTIME
+import kotlin.reflect.KClass
 import kotlinx.metadata.jvm.KotlinClassMetadata.FileFacade
 import org.junit.Assume
 import org.junit.Rule
@@ -32,9 +35,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameter
 import org.junit.runners.model.Statement
-import java.lang.annotation.Inherited
-import kotlin.annotation.AnnotationRetention.RUNTIME
-import kotlin.reflect.KClass
 
 /** Base test class that runs all tests with multiple [ClassInspectorTypes][ClassInspectorType]. */
 @RunWith(Parameterized::class)
@@ -46,7 +46,7 @@ abstract class MultiClassInspectorTest {
     fun data(): Collection<Array<ClassInspectorType>> {
       return listOf(
         arrayOf(ClassInspectorType.REFLECTIVE),
-        arrayOf(ClassInspectorType.ELEMENTS)
+        arrayOf(ClassInspectorType.ELEMENTS),
       )
     }
   }
@@ -66,7 +66,8 @@ abstract class MultiClassInspectorTest {
       override fun create(testInstance: MultiClassInspectorTest): ClassInspector {
         return ElementsClassInspector.create(testInstance.compilation.elements, testInstance.compilation.types)
       }
-    };
+    },
+    ;
 
     abstract fun create(testInstance: MultiClassInspectorTest): ClassInspector
   }
@@ -76,7 +77,7 @@ abstract class MultiClassInspectorTest {
   @Inherited
   annotation class IgnoreForHandlerType(
     val reason: String,
-    val handlerType: ClassInspectorType
+    val handlerType: ClassInspectorType,
   )
 
   @JvmField
@@ -93,12 +94,12 @@ abstract class MultiClassInspectorTest {
     object : Statement() {
       override fun evaluate() {
         val annotation = description.getAnnotation(
-          IgnoreForHandlerType::class.java
+          IgnoreForHandlerType::class.java,
         )
         val shouldIgnore = annotation?.handlerType == classInspectorType
         Assume.assumeTrue(
           "Ignoring ${description.methodName}: ${annotation?.reason}",
-          !shouldIgnore
+          !shouldIgnore,
         )
         base.evaluate()
       }
